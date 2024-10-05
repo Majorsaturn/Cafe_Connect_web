@@ -40,7 +40,7 @@ var server = http.createServer(function (req, res) {
             res.end('<h1>POST, Method!</h1>')
         }
     }
-    else if(req.url == "/user/profile/settings/profilesettings"){
+    else if(req.url == "/profile/settings/profilesettings"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
@@ -60,7 +60,7 @@ var server = http.createServer(function (req, res) {
             res.end('<h1>DELETE, Method!</h1>')
         }
     }
-    else if(req.url == "/user/friends"){
+    else if(req.url == "/friends"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
@@ -72,7 +72,7 @@ var server = http.createServer(function (req, res) {
             res.end('<h1>POST, Method!</h1>')
         }
     }
-    else if(req.url == "/user/friends/search"){
+    else if(req.url == "/friends/search"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
@@ -80,7 +80,7 @@ var server = http.createServer(function (req, res) {
             res.end('<h1>GET, Method!</h1>')
         }
     }
-    else if(req.url == "/user/friends/searchbyid"){
+    else if(req.url == "/friends/searchbyid"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
@@ -88,12 +88,16 @@ var server = http.createServer(function (req, res) {
             res.end('<h1>GET, Method!</h1>')
         }
     }
-    else if(req.url == "/profilesettings/userstatus"){
+    else if(req.url == "/profile/settings/profilesettings/userstatus"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end('<h1>GET, Method!</h1>')
+        }
+        else if(req.method == "POST"){
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end('<h1>POST, Method!</h1>')
         }
     }
     else if(req.url == "/chatroom"){
@@ -135,7 +139,7 @@ var server = http.createServer(function (req, res) {
     else if(req.url == "/searchchatroombyid"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
-        if(req.method =  = "GET"){
+        if(req.method == "GET"){
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end('<h1>GET, Method!</h1>')
         }
@@ -235,6 +239,10 @@ var server = http.createServer(function (req, res) {
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end('<h1>GET, Method!</h1>')
         }
+        else if(req.method == "POST"){
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end('<h1>POST, Method!</h1>')
+        }
     }
     else if(req.url == "/calendar/eventedit"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
@@ -243,13 +251,17 @@ var server = http.createServer(function (req, res) {
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end('<h1>GET, Method!</h1>')
         }
+        else if(req.method == "POST"){
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end('<h1>POST, Method!</h1>')
+        }
     }
     else if(req.url == "/calendar/eventdelete"){
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
-        if(req.method == "GET"){
+        if(req.method == "DELETE"){
             res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
+            res.end('<h1>DELETE, Method!</h1>')
         }
     }
     else
