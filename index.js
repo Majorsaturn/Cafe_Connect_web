@@ -8,6 +8,7 @@ var server = http.createServer(function (req, res) {
         if(req.method == "GET"){
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end('<h1>This is the Home Page</h1>')
+            database.find({test: 1})
         }
         else if(req.method == "POST"){
             res.writeHead(200, {'Content-Type': 'text/html'});
@@ -272,7 +273,6 @@ server.listen(5000);
 console.log('node.js web server at port 5000 is running..')
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -281,10 +281,9 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
-
 async function run() {
     try {
-        // Connect the client to the server    (optional starting in v4.7)
+        // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -295,3 +294,4 @@ async function run() {
     }
 }
 run().catch(console.dir);
+const database = client.db('cafeconnect1')
