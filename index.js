@@ -294,4 +294,3 @@ async function run() {
     }
 }
 run().catch(console.dir);
-const database = client.db('cafeconnect1')
