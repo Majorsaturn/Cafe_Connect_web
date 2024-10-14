@@ -10,6 +10,11 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+async function createUser(client, newUser) {
+    const result = await client.db("CC_1st").collection("Users").insertOne(newUser);
+
+    console.log(`New user registered with id: ${result.insertId}`);
+}
 async function listDatabases(client){
     databasesList = await client.db().admin().listDatabases();
 
@@ -67,6 +72,11 @@ const server = http.createServer(function (req, res) {
         }
         else if(req.method == "POST"){
             res.writeHead(200, {'Content-Type': 'text/html'});
+            run();
+            createUser(client, {
+                name: "Nico Novak",
+                Birthday: Date('November 5, 2002')
+            })
             res.end('<h1>POST, Method!</h1>')
         }
     }
