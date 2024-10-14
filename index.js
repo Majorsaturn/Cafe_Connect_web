@@ -1,14 +1,45 @@
 var http = require('http');
-var server = http.createServer(function (req, res) {
 
+const {MongoClient, ServerApiVersion} = require('mongodb');
+const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+});
+async function listDatabases(client){
+    databasesList = await client.db().admin().listDatabases();
+
+    console.log("Databases:");
+    databasesList.databases.forEach(db => console.log(` - ${db.name}`));
+};
+async function run() {
+    try {
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
+        // Send a ping to confirm a successful connection
+        //await client.db("admin").command({ping: 1});
+        //console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        await listDatabases(client);
+    } finally {
+        // Ensures that the client will close when you finish/error
+        await client.close();
+    }
+}
+
+run().catch(console.dir);
+
+const server = http.createServer(function (req, res) {
 
     if (req.url == '/') {
         // res.write('<html><body><p>Comp Sci.</p></body></html>');
         //response header
         if(req.method == "GET"){
             res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>This is the Home Page</h1>')
-            database.find({test: 1})
+            res.end('<h1>Home Screen</h1>')
         }
         else if(req.method == "POST"){
             res.writeHead(200, {'Content-Type': 'text/html'});
@@ -271,26 +302,3 @@ var server = http.createServer(function (req, res) {
 server.listen(5000);
 
 console.log('node.js web server at port 5000 is running..')
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
-async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        await client.close();
-    }
-}
-run().catch(console.dir);
