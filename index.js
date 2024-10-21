@@ -329,7 +329,7 @@ async function run() {
 run().catch(console.dir);
 */
 var http = require('http');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
 // MongoDB connection URI
@@ -404,11 +404,14 @@ var server = http.createServer(async function (req, res) {
                 query.email = queryObject.email;
             }
 
-            if (queryObject.name) {
+            else if (queryObject.name) {
                 query.name = queryObject.name;
             }
-            if (queryObject.username) {
+            else if (queryObject.username) {
                 query.username = queryObject.username; // Search by username
+            }
+            else if (queryObject.id) {
+                query._id = new ObjectId(queryObject.id); // Search by id
             }
 
             // Find users that match the query
@@ -423,7 +426,45 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
-    } else {
+    }
+    else if(req.url.startsWith("/profile/settings/deleteuser") && req.method =='DELETE') {
+        // Parse query parameters from the URL
+        const queryObject = url.parse(req.url, true).query;
+
+        try {
+            const collection = client.db("CC_1st").collection("Users");
+
+            // Use the query parameters to search for users
+            const query = {};
+
+            if (queryObject.email) {
+                query.email = queryObject.email;
+            }
+
+            else if (queryObject.name) {
+                query.name = queryObject.name;
+            }
+            else if (queryObject.username) {
+                query.username = queryObject.username; // Search by username
+            }
+            else if (queryObject.id) {
+                query._id = new ObjectId(queryObject.id); // Search by id
+            }
+
+            // Find users that match the query
+            const deleted = await collection.deleteOne(query);
+
+            // Send the retrieved users as JSON
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(deleted));
+
+        } catch (error) {
+            console.error("Error retrieving users: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+        }
+    }
+    else {
         res.writeHead(404, { 'Content-Type': 'text/html' });
         res.end('<h1>404 Not Found</h1>');
     }
