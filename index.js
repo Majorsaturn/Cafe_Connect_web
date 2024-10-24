@@ -329,11 +329,11 @@ async function run() {
 run().catch(console.dir);
 */
 var http = require('http');
-const { run, signUp } = require('./mongodb');
+const MDB = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
 
-run();
+MDB.run();
 
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
@@ -361,14 +361,14 @@ var server = http.createServer(async function (req, res) {
                     console.log("Parsed data: ", userData); // Log parsed data
 
                     // Insert data into the collection and get the result
-                    const result = signUp(userData); //signup id
+                    const result = await MDB.signUp(userData); //signup id
 
                     // Log the insertedId
-                    console.log("Inserted ID: ", result.insertedId);
+                    console.log("Inserted ID: ", result);
 
                     // Send the insertedId in the response
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User registered!', id: result.insertedId }));
+                    res.end(JSON.stringify({ message: 'User registered!', id: result }));
                 } catch (error) {
                     console.error("Error parsing JSON: ", error);
                     res.writeHead(400, { 'Content-Type': 'text/html' });
