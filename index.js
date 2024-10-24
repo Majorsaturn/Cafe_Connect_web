@@ -329,25 +329,16 @@ async function run() {
 run().catch(console.dir);
 */
 var http = require('http');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { run, signUp } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
-// MongoDB connection URI
-const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
 
-// Create a MongoClient with MongoClientOptions
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+run();
 
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
     // Connect to the MongoDB client
-    await client.connect();
+
 
     if (req.url == '/signup') {
         if (req.method == "POST") {
@@ -369,10 +360,8 @@ var server = http.createServer(async function (req, res) {
                     const userData = JSON.parse(body); // Parse the incoming JSON data
                     console.log("Parsed data: ", userData); // Log parsed data
 
-                    const collection = client.db("CC_1st").collection("Users");
-
                     // Insert data into the collection and get the result
-                    const result = await collection.insertOne(userData);
+                    const result = signUp(userData); //signup id
 
                     // Log the insertedId
                     console.log("Inserted ID: ", result.insertedId);
@@ -464,6 +453,41 @@ var server = http.createServer(async function (req, res) {
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
     }
+    else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
+        // Parse query parameters from the URL
+        const queryObject = url.parse(req.url, true).query;
+
+        try {
+            const collection = client.db("CC_1st").collection("Users");
+
+            // Use the query parameters to search for users
+            const query = {};
+
+            if (queryObject.email) {
+                query.email = queryObject.email;
+            }
+
+            if (queryObject.name) {
+                query.name = queryObject.name;
+            }
+            if (queryObject.username) {
+                query.username = queryObject.username; // Search by username
+            }
+            const userDoc = collection.findOne({username: query.username});
+            const userId = new ObjectId(userDoc.id);
+            // Find users that match the query
+            const userUpdate = await collection.updateOne(userId, {$set: updateData}).toArray();
+
+            // Send the retrieved users as JSON
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(users));
+
+        } catch (error) {
+            console.error("Error retrieving users: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+        }
+    }
     else {
         res.writeHead(404, { 'Content-Type': 'text/html' });
         res.end('<h1>404 Not Found</h1>');
@@ -474,14 +498,4 @@ var server = http.createServer(async function (req, res) {
 server.listen(5000);
 console.log('Node.js web server at port 5000 is running..');
 
-// MongoDB connection verification
-async function run() {
-    try {
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Connected to MongoDB!");
-    } catch (error) {
-        console.error("Error connecting to MongoDB: ", error);
-    }
-}
-run().catch(console.dir);
+
