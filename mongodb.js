@@ -129,6 +129,27 @@ async function changeUserStatus(queryObject, requestData) {
     return result;
 }
 
+async function userLogin(queryObject){
+    const collection = client.db("CC_1st").collection("Users");
+    const user = await User.findOne({username = queryobject.body.username});
+    const query = {};
+
+    if(user){
+        const result = queryObject.body.password === user.password;
+        if(result){
+            return result;
+        }
+        else{
+            return result;
+            res.status(400).json({error: "password does not match"});
+        }
+    }
+    else{
+        return false;
+        res.status(400).json({error: "username does not match"});
+    }
+}
+
 module.exports = {
     run,
     signUp,

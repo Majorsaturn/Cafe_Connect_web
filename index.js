@@ -328,7 +328,7 @@ async function run() {
 }
 run().catch(console.dir);
 */
-var http = require('http');
+const http = require('http');
 const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
@@ -531,6 +531,9 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
+    }
+    else if(req.url.startsWith('/login') && req.method == "POST"){
+        const queryObject = url.parse(req.url, true).query;
     }
     else {
         res.writeHead(404, { 'Content-Type': 'text/html' });
