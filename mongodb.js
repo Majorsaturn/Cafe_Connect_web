@@ -1,6 +1,6 @@
 // MongoDB connection URI
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
+const bcrypt = require('bcryptjs');
 const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
 // Create a MongoClient with MongoClientOptions
 const client = new MongoClient(uri, {
@@ -29,8 +29,17 @@ run().catch(console.dir);
 async function signUp(userData){
     // Insert data into the collection and get the result
     Users = client.db("CC_1st").collection("Users");
-    result = await Users.insertOne(userData); //signup id
-    return result.insertedId;
+    const { password, ...rest } = userData;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userExists = await Users.findOne({ username: rest.username });
+
+    if (userExists) {
+        throw new Error('User already exists');
+    }
+
+    result = await Users.insertOne({ ...rest, password: hashedPassword }); //signup id
+    console.log("Insert result:", result);
+    return result;
 }
 
 // Function to search for users based on query parameters
@@ -128,7 +137,7 @@ async function changeUserStatus(queryObject, requestData) {
     const result = await collection.updateOne(updateCriteria, { $set: updateData });
     return result;
 }
-
+/*
 async function userLogin(queryObject){
     const collection = client.db("CC_1st").collection("Users");
     const user = await User.findOne({username = queryobject.body.username});
@@ -149,7 +158,7 @@ async function userLogin(queryObject){
         res.status(400).json({error: "username does not match"});
     }
 }
-
+*/
 module.exports = {
     run,
     signUp,
