@@ -1,6 +1,8 @@
 // MongoDB connection URI
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const secret = 'jebus276'
 const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
 // Create a MongoClient with MongoClientOptions
 const client = new MongoClient(uri, {
@@ -71,21 +73,21 @@ async function deleteUser(queryObject) {
     if (queryObject.email) {
         query.email = queryObject.email;
     }
-    else if (queryObject.name) {
+    if (queryObject.name) {
         query.name = queryObject.name;
     }
-    else if (queryObject.username) {
+    if (queryObject.username) {
         query.username = queryObject.username; // Search by username
     }
-    else if (queryObject.id) {
+    if (queryObject.id) {
         query._id = new ObjectId(queryObject.id); // Search by id
     }
 
-
+    const id = new ObjectId(query._id);
     // Delete the user that matches the query
     const deleted = await collection.deleteOne(query);
     if (deleted.deletedCount > 0) {
-        console.log(`Deleted user with ID: ${user._id}`); // Log the deleted user's ID
+        console.log(`Deleted user with ID: ${id}`); // Log the deleted user's ID
     }
     return deleted;
 }
@@ -139,21 +141,77 @@ async function changeUserStatus(queryObject, requestData) {
 
 async function userLogin(queryObject){
     const collection = client.db("CC_1st").collection("Users");
-    const query = {};
-    query.username = queryObject.username;
-    query.password = queryObject.password;
+    const query = {
+        username: queryObject.username,
+        password: queryObject.password
+    };
     const user = await collection.findOne({ username: query.username });
     if(user){
         const isPasswordMatch = await bcrypt.compare(query.password, user.password);
         if (isPasswordMatch) {
-            return isPasswordMatch;
+            const token = jwt.sign(
+                { userId: user._id, username: user.username },
+                secret, // Replace with a secure key, ideally from an environment variable
+                { expiresIn: '1h' } // Token expires in 1 hour, adjust as needed
+            );
+            console.log(jwt.verify(token, secret));
+            console.log(token);
+            return { token }
         } else {
-            return isPasswordMatch;
+            res.status(400).json({error: "incorrect password"});
         }
     }
     else{
         return false;
         res.status(400).json({error: "username does not match"});
+    }
+}
+
+async function addFriend(token, friendUser){
+
+    try{
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const collection = client.db("CC_1st").collection("Users");
+        const exists = await collection.findOne({username: friendUser});
+        if(!exists){
+            console.log(`Failed to add friend ${friendUser}.`);
+            return { success: false, message: `Failed to add friend ${friendUser}.` };
+        }
+        const result = await collection.updateOne(
+            { _id: userId },
+            { $addToSet: {friends: friendUser} }
+            );
+
+        if (result.modifiedCount > 0) {
+            console.log(`Friend ${friendUser} added successfully!`);
+            return { success: true, message: `Friend ${friendUser} added successfully!` };
+        } else {
+            console.log(`Failed to add friend ${friendUser}.`);
+            return { success: false, message: `Failed to add friend ${friendUser}.` };
+        }
+    }
+    catch (error) {
+        console.error("Error adding friend:", error);
+        return {success: false, error: "Failed to authenticate or add friend."};
+    }
+}
+
+async function listFriends(token){
+    try {
+        const collection = client.db("CC_1st").collection("Users");
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const friendList = await collection.findOne(
+            { _id: userId },
+            { projection: {friends: 1}}
+            );
+        return friendList.friends;
+    }
+    catch(error){
+        console.error("Error loading friends:", error);
     }
 }
 
@@ -165,4 +223,6 @@ module.exports = {
     editUser,
     changeUserStatus,
     userLogin,
+    addFriend,
+    listFriends,
 }

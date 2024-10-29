@@ -1,7 +1,7 @@
 const http = require('http');
-const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin } = require('./mongodb');
+const { run, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
-
+const secret = 'jebus276'
 
 run();
 
@@ -207,18 +207,63 @@ var server = http.createServer(async function (req, res) {
     }
 
     else if(req.url.startsWith('/login') && req.method == "POST"){
+
+        const queryObject = url.parse(req.url, true).query;
+        const result = await userLogin(queryObject);
+        if(!result){
+            throw new Error("Token generation failed");
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+    }
+
+    else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET")){
         let body = '';
 
         req.on('data', chunk => {
             body += chunk.toString(); // Convert Buffer to string
         });
 
-        const queryObject = url.parse(req.url, true).query;
-        const result = await userLogin(queryObject);
-        if(result){
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end("You have logged in successfully.");
-        }
+        req.on('end', async () => {
+            const authHeader = req.headers['authorization'];
+
+            if(authHeader){
+                const token = authHeader;
+                let friendUser = null;
+                if(req.method === "POST"){
+                    const parsedBody = JSON.parse(body);
+                    friendUser = parsedBody.username;
+
+                    try{
+                    const result = await addFriend(token, friendUser);
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(result));
+                    }
+                    catch(error){
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                }
+                else if(req.method === "GET"){
+                    try{
+                        const result = await listFriends(token);
+
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify(result));
+                    }
+                    catch(error){
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                }
+            }
+            else {
+                // If the Authorization header is missing
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
+            }
+        });
     }
 
     else {
