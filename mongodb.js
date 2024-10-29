@@ -23,7 +23,6 @@ async function run() {
         console.error("Error connecting to MongoDB: ", error);
     }
 }
-run().catch(console.dir);
 
 
 async function signUp(userData){
@@ -137,20 +136,19 @@ async function changeUserStatus(queryObject, requestData) {
     const result = await collection.updateOne(updateCriteria, { $set: updateData });
     return result;
 }
-/*
+
 async function userLogin(queryObject){
     const collection = client.db("CC_1st").collection("Users");
-    const user = await User.findOne({username = queryobject.body.username});
     const query = {};
-
+    query.username = queryObject.username;
+    query.password = queryObject.password;
+    const user = await collection.findOne({ username: query.username });
     if(user){
-        const result = queryObject.body.password === user.password;
-        if(result){
-            return result;
-        }
-        else{
-            return result;
-            res.status(400).json({error: "password does not match"});
+        const isPasswordMatch = await bcrypt.compare(query.password, user.password);
+        if (isPasswordMatch) {
+            return isPasswordMatch;
+        } else {
+            return isPasswordMatch;
         }
     }
     else{
@@ -158,12 +156,13 @@ async function userLogin(queryObject){
         res.status(400).json({error: "username does not match"});
     }
 }
-*/
+
 module.exports = {
     run,
     signUp,
     searchUsers,
     deleteUser,
     editUser,
-    changeUserStatus
+    changeUserStatus,
+    userLogin,
 }

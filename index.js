@@ -1,5 +1,5 @@
 const http = require('http');
-const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus } = require('./mongodb');
+const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
 
@@ -32,6 +32,9 @@ var server = http.createServer(async function (req, res) {
 
                     // Insert data into the collection and get the result
                     const result = await signUp(userData); //signup id
+
+                    // Log the insertedId
+                    console.log("Inserted ID: ", result.insertedId);
 
                     // Send the insertedId in the response
                     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -202,7 +205,7 @@ var server = http.createServer(async function (req, res) {
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
     }
-    /*
+
     else if(req.url.startsWith('/login') && req.method == "POST"){
         let body = '';
 
@@ -210,11 +213,14 @@ var server = http.createServer(async function (req, res) {
             body += chunk.toString(); // Convert Buffer to string
         });
 
-
-
         const queryObject = url.parse(req.url, true).query;
+        const result = await userLogin(queryObject);
+        if(result){
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end("You have logged in successfully.");
+        }
     }
-     */
+
     else {
         res.writeHead(404, { 'Content-Type': 'text/html' });
         res.end('<h1>404 Not Found</h1>');
