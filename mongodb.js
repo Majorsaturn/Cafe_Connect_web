@@ -62,7 +62,7 @@ async function searchUsers(queryObject) {
     }
 
     // Find users that match the query
-    const users = await collection.find(query).toArray();
+    const users = await collection.findOne(query)
     return users;
 }
 
@@ -212,9 +212,48 @@ async function listFriends(token){
     }
     catch(error){
         console.error("Error loading friends:", error);
+        return {success: false, error: "Failed to load friends."};
     }
 }
 
+async function makeTable(token, tableData){
+    try{
+        const Tables = client.db("CC_1st").collection("Tables");
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+        const username = decodedToken.username;
+
+        tableData.members = [username];
+        tableData.createdby = userId;
+
+        const { ...all } = tableData;
+
+        result = await Tables.insertOne({ ...all });
+        console.log("Insert result:", result);
+        return result;
+    }
+    catch(error){
+        console.error("Error creating chatroom:", error);
+        return {success: false, error: "Failed to create chatroom."};
+    }
+}
+
+async function viewTable(queryObject) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+
+        const query = {
+            _id: new ObjectId(queryObject.id)
+        };
+
+        const table = await Tables.findOne(query);
+        return table;
+    }
+    catch (error) {
+        console.error("Error finding chatroom:", error);
+        return {success: false, error: "Failed to create chatroom."};
+    }
+}
 module.exports = {
     run,
     signUp,
@@ -225,4 +264,6 @@ module.exports = {
     userLogin,
     addFriend,
     listFriends,
+    makeTable,
+    viewTable,
 }

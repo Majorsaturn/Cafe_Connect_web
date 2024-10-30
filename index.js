@@ -1,5 +1,5 @@
 const http = require('http');
-const { run, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin } = require('./mongodb');
+const { run, viewTable, makeTable, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 const secret = 'jebus276'
 
@@ -18,14 +18,13 @@ var server = http.createServer(async function (req, res) {
 
             req.on('end', async () => {
 
-
-                console.log("Received body: ", body); // Log the raw body
                 if (!body) {
                     console.error("No data received");
                     res.writeHead(400, { 'Content-Type': 'text/html' });
                     res.end('<h1>Bad Request: No data received</h1>');
                     return;
                 }
+                console.log("Received body: ", body); // Log the raw body
                 try {
                     const userData = JSON.parse(body); // Parse the incoming JSON data
                     console.log("Parsed data: ", userData); // Log parsed data
@@ -265,10 +264,60 @@ var server = http.createServer(async function (req, res) {
             }
         });
     }
+    else if(req.url.startsWith('/table')){
 
-    else {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404 Not Found</h1>');
+        if(req.method === "GET"){
+            const queryObject = url.parse(req.url, true).query;
+
+            try {
+                // Call the searchUsers function from mongodb.js with the query parameters
+                const table = await viewTable(queryObject);
+
+                // Send the retrieved users as JSON
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(table));
+
+            } catch (error) {
+                console.error("Error retrieving users: ", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        }
+        else if(req.url.startsWith('/table/create') && req.method === "POST") {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                if (!body) {
+                    console.error("No data received");
+                    res.writeHead(400, {'Content-Type': 'text/html'});
+                    res.end('<h1>Bad Request: No data received</h1>');
+                    return;
+                }
+                console.log("Received body: ", body);
+
+                const authHeader = req.headers['authorization'];
+
+                if (authHeader) {
+
+                }
+                const token = authHeader;
+                const tableData = JSON.parse(body); // Parse the incoming JSON data
+                console.log("Parsed data: ", tableData);
+                try {
+                    const result = await makeTable(token, tableData);
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
+                } catch (error) {
+                    console.error("Error processing request: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
+                }
+            })
+        }
     }
 });
 
