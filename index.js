@@ -1,6 +1,7 @@
-var http = require('http');
-const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
+const http = require('http');
+const { run, viewTable, makeTable, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
+const secret = 'jebus276'
 
 run();
 
@@ -16,19 +17,20 @@ var server = http.createServer(async function (req, res) {
             });
 
             req.on('end', async () => {
-                console.log("Received body: ", body); // Log the raw body
+
                 if (!body) {
                     console.error("No data received");
                     res.writeHead(400, { 'Content-Type': 'text/html' });
                     res.end('<h1>Bad Request: No data received</h1>');
                     return;
                 }
+                console.log("Received body: ", body); // Log the raw body
                 try {
                     const userData = JSON.parse(body); // Parse the incoming JSON data
                     console.log("Parsed data: ", userData); // Log parsed data
 
                     // Insert data into the collection and get the result
-                    const result = signUp(userData); //signup id
+                    const result = await signUp(userData); //signup id
 
                     // Log the insertedId
                     console.log("Inserted ID: ", result.insertedId);
@@ -167,6 +169,156 @@ var server = http.createServer(async function (req, res) {
         });
     }
 
+    else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
+        // Parse query parameters from the URL
+        const queryObject = url.parse(req.url, true).query;
+
+        try {
+            const collection = client.db("CC_1st").collection("Users");
+
+            // Use the query parameters to search for users
+            const query = {};
+
+            if (queryObject.email) {
+                query.email = queryObject.email;
+            }
+
+            if (queryObject.name) {
+                query.name = queryObject.name;
+            }
+            if (queryObject.username) {
+                query.username = queryObject.username; // Search by username
+            }
+            const userDoc = collection.findOne({username: query.username});
+            const userId = new ObjectId(userDoc.id);
+            // Find users that match the query
+            const userUpdate = await collection.updateOne(userId, {$set: updateData}).toArray();
+
+            // Send the retrieved users as JSON
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(users));
+
+        } catch (error) {
+            console.error("Error retrieving users: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+        }
+    }
+
+    else if(req.url.startsWith('/login') && req.method == "POST"){
+
+        const queryObject = url.parse(req.url, true).query;
+        const result = await userLogin(queryObject);
+        if(!result){
+            throw new Error("Token generation failed");
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+    }
+
+    else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET")){
+        let body = '';
+
+        req.on('data', chunk => {
+            body += chunk.toString(); // Convert Buffer to string
+        });
+
+        req.on('end', async () => {
+            const authHeader = req.headers['authorization'];
+
+            if(authHeader){
+                const token = authHeader;
+                let friendUser = null;
+                if(req.method === "POST"){
+                    const parsedBody = JSON.parse(body);
+                    friendUser = parsedBody.username;
+
+                    try{
+                    const result = await addFriend(token, friendUser);
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(result));
+                    }
+                    catch(error){
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                }
+                else if(req.method === "GET"){
+                    try{
+                        const result = await listFriends(token);
+
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify(result));
+                    }
+                    catch(error){
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, error: error.message }));
+                    }
+                }
+            }
+            else {
+                // If the Authorization header is missing
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
+            }
+        });
+    }
+    else if(req.url.startsWith('/table')){
+
+        if(req.method === "GET"){
+            const queryObject = url.parse(req.url, true).query;
+
+            try {
+                // Call the searchUsers function from mongodb.js with the query parameters
+                const table = await viewTable(queryObject);
+
+                // Send the retrieved users as JSON
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(table));
+
+            } catch (error) {
+                console.error("Error retrieving users: ", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        }
+        else if(req.url.startsWith('/table/create') && req.method === "POST") {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                if (!body) {
+                    console.error("No data received");
+                    res.writeHead(400, {'Content-Type': 'text/html'});
+                    res.end('<h1>Bad Request: No data received</h1>');
+                    return;
+                }
+                console.log("Received body: ", body);
+
+                const authHeader = req.headers['authorization'];
+
+                if (authHeader) {
+
+                }
+                const token = authHeader;
+                const tableData = JSON.parse(body); // Parse the incoming JSON data
+                console.log("Parsed data: ", tableData);
+                try {
+                    const result = await makeTable(token, tableData);
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
+                } catch (error) {
+                    console.error("Error processing request: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
+                }
+            })
+        }
+    }
     else if (req.url === "/subscription" && req.method === "GET") {
         try {
             const result = await getSubscriptionDetails();
@@ -287,48 +439,10 @@ var server = http.createServer(async function (req, res) {
         });
     }*/
 
-    /*else if (req.url === "/friends/add" && req.method === "POST") {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            try {
-                const requestData = JSON.parse(body);
-                const requesterId = requestData.requesterId;
-                const friendId = requestData.friendId;
-
-                // Validate that requesterId and friendId are provided
-                if (!requesterId || !friendId) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Requester ID and Friend ID are required' }));
-                    return;
-                }
-
-                // Call the addFriend function to handle the friend request logic
-                const result = await addFriend(requesterId, friendId);
-
-                if (result.success) {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: result.message }));
-                } else {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: result.message }));
-                }
-            } catch (error) {
-                console.error("Error in /friends/add route:", error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Internal Server Error' }));
-            }
-        });
-    }*/
-
-
 });
-
 
 // Start the server
 server.listen(5000);
 console.log('Node.js web server at port 5000 is running..');
+
+
