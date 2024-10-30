@@ -1,335 +1,5 @@
-/*var http = require('http');
-var server = http.createServer(function (req, res) {
-
-
-    if (req.url == '/') {
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>This is the Home Page</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>you entered something on the home page</h1>')
-        }
-    }
-    else if(req.url == "/login"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>Login Screen</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>Login Enter</h1>')
-        }
-    }
-    else if(req.url == "/signup"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        if(req.method == "POST"){
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString(); // Convert Buffer to string
-            });
-
-            req.on('end', async () => {
-                console.log("Received body: ", body); // Log the raw body
-                if (!body) {
-                    console.error("No data received");
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request: No data received</h1>');
-                    return;
-                }
-                try {
-                    const userData = JSON.parse(body); // Parse the incoming JSON data
-                    console.log("Parsed data: ", userData); // Log parsed data
-
-                    const collection = client.db("yourDatabase").collection("yourCollection");
-                    await collection.insertOne(userData); // Insert data
-                    res.writeHead(200, {'Content-Type': 'text/html'});
-                    res.end('<h1>User registered!</h1>');
-                } catch (error) {
-                    console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request</h1>');
-                }
-            });
-        }
-    }
-
-
-    }
-    else if(req.url == "/profile/settings/profilesettings"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/profile/settings/deleteuser"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "DELETE") {
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>DELETE, Method!</h1>')
-        }
-    }
-    else if(req.url == "/friends"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/friends/search"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/friends/searchbyid"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/profile/settings/profilesettings/userstatus"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/chatroom"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/chatroom/create"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/chatroom/deletechatroom"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "DELETE") {
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>DELETE, Method!</h1>')
-        }
-    }
-    else if(req.url == "/searchchatroombyname"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/searchchatroombyid"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/chatroom/getinvite"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/chatroom/settings"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/subscription"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/subscription/purchase"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/subscription/cancel"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/profile/settings"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/friends/blocks"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/calendar"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-    }
-    else if(req.url == "/calendar/eventadd"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/calendar/eventedit"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "GET"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>GET, Method!</h1>')
-        }
-        else if(req.method == "POST"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>POST, Method!</h1>')
-        }
-    }
-    else if(req.url == "/calendar/eventdelete"){
-        // res.write('<html><body><p>Comp Sci.</p></body></html>');
-        //response header
-        if(req.method == "DELETE"){
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end('<h1>DELETE, Method!</h1>')
-        }
-    }
-    else
-        res.end('Invalid Request!');
-
-})
-
-server.listen(5000);
-
-console.log('node.js web server at port 5000 is running..')
-
-/*-------------------- M o n g o D B   C o n n e c t i o n --------------------*/
-/*
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
-
-async function run() {
-    try {
-        // Connect the client to the server    (optional starting in v4.7)
-        await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        await client.close();
-    }
-}
-run().catch(console.dir);
-*/
 var http = require('http');
-const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus } = require('./mongodb');
+const { run, signUp, searchUsers, deleteUser, editUser, changeUserStatus, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 
 run();
@@ -497,49 +167,168 @@ var server = http.createServer(async function (req, res) {
         });
     }
 
-    else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
-        // Parse query parameters from the URL
-        const queryObject = url.parse(req.url, true).query;
-
+    else if (req.url === "/subscription" && req.method === "GET") {
         try {
-            const collection = client.db("CC_1st").collection("Users");
+            const result = await getSubscriptionDetails();
 
-            // Use the query parameters to search for users
-            const query = {};
-
-            if (queryObject.email) {
-                query.email = queryObject.email;
+            if (result.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result.data));
+            } else {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: result.message }));
             }
-
-            if (queryObject.name) {
-                query.name = queryObject.name;
-            }
-            if (queryObject.username) {
-                query.username = queryObject.username; // Search by username
-            }
-            const userDoc = collection.findOne({username: query.username});
-            const userId = new ObjectId(userDoc.id);
-            // Find users that match the query
-            const userUpdate = await collection.updateOne(userId, {$set: updateData}).toArray();
-
-            // Send the retrieved users as JSON
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(users));
-
         } catch (error) {
-            console.error("Error retrieving users: ", error);
+            console.error("Error in /subscription route:", error);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
     }
-    else {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404 Not Found</h1>');
+
+    else if (req.url.startsWith("/profile/settings/subscription") && req.method === "GET") {
+        // Parse query parameters to get the userId
+        const queryObject = url.parse(req.url, true).query;
+
+        // Validate that a userId is provided
+        if (!queryObject.userId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'User ID is required to view subscription details.' }));
+            return;
+        }
+
+        try {
+            // Call the viewSubscription function to get subscription details
+            const result = await viewSubscription(queryObject.userId);
+
+            if (result.success) {
+                // Send subscription details as JSON
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Subscription details retrieved successfully.', subscription: result.data }));
+            } else {
+                // Subscription not found
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: result.message }));
+            }
+        } catch (error) {
+            console.error("Error retrieving subscription: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+        }
     }
+
+    else if (req.url.startsWith("/subscription/purchase") && req.method === "POST") {
+        let body = '';
+
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+
+        req.on('end', async () => {
+            try {
+                const { userId, subscriptionDetails } = JSON.parse(body);
+
+                // Check if both userId and subscriptionDetails are provided
+                if (!userId || !subscriptionDetails) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'userId and subscriptionDetails are required' }));
+                    return;
+                }
+
+                const result = await purchaseSubscription(userId, subscriptionDetails);
+
+                // Send response based on the result
+                if (result.success) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: result.message }));
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: result.message }));
+                }
+            } catch (error) {
+                console.error("Error handling activateSubscription route:", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        });
+    }
+
+    /*else if (req.url === "/subscription/cancel" && req.method === "POST") {
+        let body = '';
+
+        req.on('data', chunk => {
+            body += chunk.toString(); // Convert Buffer to string
+        });
+
+        req.on('end', async () => {
+            try {
+                const requestData = JSON.parse(body);
+                const userId = requestData.userId; // Expecting userId in the body
+
+                if (!userId) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'User ID is required' }));
+                    return;
+                }
+
+                const result = await cancelUserSubscription(userId);
+
+                if (result.success) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Subscription cancelled successfully' }));
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: result.message }));
+                }
+            } catch (error) {
+                console.error("Error in /subscription/cancel route:", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        });
+    }*/
+
+    /*else if (req.url === "/friends/add" && req.method === "POST") {
+        let body = '';
+
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+
+        req.on('end', async () => {
+            try {
+                const requestData = JSON.parse(body);
+                const requesterId = requestData.requesterId;
+                const friendId = requestData.friendId;
+
+                // Validate that requesterId and friendId are provided
+                if (!requesterId || !friendId) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Requester ID and Friend ID are required' }));
+                    return;
+                }
+
+                // Call the addFriend function to handle the friend request logic
+                const result = await addFriend(requesterId, friendId);
+
+                if (result.success) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: result.message }));
+                } else {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: result.message }));
+                }
+            } catch (error) {
+                console.error("Error in /friends/add route:", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        });
+    }*/
+
+
 });
+
 
 // Start the server
 server.listen(5000);
 console.log('Node.js web server at port 5000 is running..');
-
-

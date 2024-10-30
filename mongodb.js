@@ -129,11 +129,151 @@ async function changeUserStatus(queryObject, requestData) {
     return result;
 }
 
+async function getSubscriptionDetails() {
+    try {
+        const collection = client.db("CC_1st").collection("Subscriptions");
+
+        // Fetch all subscription plans
+        const subscriptionDetails = await collection.find().toArray();
+
+        return { success: true, data: subscriptionDetails };
+    } catch (error) {
+        console.error("Error retrieving subscription details:", error);
+        return { success: false, message: 'Internal Server Error' };
+    }
+}
+
+async function viewSubscription(userId) {
+    const collection = client.db("CC_1st").collection("Users");
+
+    // Find the user with the specified userId and retrieve the subscription data
+    const user = await collection.findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { subscription: 1 } } // Only retrieve the subscription field
+    );
+
+    // Check if user or subscription data exists
+    return user && user.subscription
+        ? { success: true, data: user.subscription }
+        : { success: false, message: 'Subscription not found for this user' };
+}
+
+async function purchaseSubscription(userId, subscriptionDetails) {
+    try {
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Validate userId format
+        if (!ObjectId.isValid(userId)) {
+            return { success: false, message: 'Invalid user ID format' };
+        }
+
+        // Update the user's subscription details
+        const result = await collection.updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: { subscription: subscriptionDetails } }
+        );
+
+        if (result.modifiedCount > 0) {
+            return { success: true, message: 'Subscription activated successfully' };
+        } else {
+            return { success: false, message: 'User not found' };
+        }
+    } catch (error) {
+        console.error("Error in activateSubscription:", error);
+        return { success: false, message: 'Internal Server Error' };
+    }
+}
+
+/*async function cancelSubscription(userId) {
+    try {
+        const collectionUsers = client.db("CC_1st").collection("Users");
+        const collectionSubscriptions = client.db("CC_1st").collection("Subscriptions");
+
+        // Find the user in the Users collection
+        const user = await collectionUsers.findOne({ _id: new ObjectId(userId) });
+
+        if (!user) {
+            return { success: false, message: 'User not found' };
+        }
+
+        // Check if the user has an active subscription
+        if (!user.subscriptionId) {
+            return { success: false, message: 'No active subscription to cancel' };
+        }
+
+        // Find the subscription in the Subscriptions collection
+        const subscription = await collectionSubscriptions.findOne({ _id: new ObjectId(user.subscriptionId) });
+
+        if (!subscription) {
+            return { success: false, message: 'Subscription not found' };
+        }
+
+        // Update the user's subscriptionId to null (or remove subscription information)
+        await collectionUsers.updateOne({ _id: new ObjectId(userId) }, { $set: { subscriptionId: null } });
+
+        // Optionally, you can also update the subscription status (if you have a status field)
+        await collectionSubscriptions.updateOne({ _id: new ObjectId(user.subscriptionId) }, { $set: { status: 'Cancelled' } });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error in cancelUserSubscription:", error);
+        return { success: false, message: 'Error cancelling subscription' };
+    }
+}*/
+
+/*async function addFriend(requesterId, friendId) {
+    try {
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Check if both users exist
+        const requester = await collection.findOne({ _id: new ObjectId(requesterId) });
+        const friend = await collection.findOne({ _id: new ObjectId(friendId) });
+
+        if (!requester || !friend) {
+            return { success: false, message: 'One or both users not found' };
+        }
+
+        // Check if they are already friends
+        if (requester.friends && requester.friends.includes(friendId)) {
+            return { success: false, message: 'You are already friends with this user' };
+        }
+
+        // Check if there’s already a pending friend request
+        if (requester.pendingFriends && requester.pendingFriends.includes(friendId)) {
+            return { success: false, message: 'Friend request already sent' };
+        }
+
+        // Add friendId to the requester's pendingFriends
+        await collection.updateOne(
+            { _id: new ObjectId(requesterId) },
+            { $addToSet: { pendingFriends: friendId } } // Prevents duplicates
+        );
+
+        // Optionally, add requesterId to friend's receivedFriendRequests if implementing a bi-directional request
+        await collection.updateOne(
+            { _id: new ObjectId(friendId) },
+            { $addToSet: { receivedFriendRequests: requesterId } }
+        );
+
+        return { success: true, message: 'Friend request sent successfully' };
+    } catch (error) {
+        console.error("Error in addFriend function:", error);
+        return { success: false, message: 'Failed to send friend request' };
+    }
+}*/
+
+
+
 module.exports = {
     run,
     signUp,
     searchUsers,
     deleteUser,
     editUser,
-    changeUserStatus
+    changeUserStatus,
+    getSubscriptionDetails,
+    viewSubscription,
+    purchaseSubscription,
+    //cancelSubscription,
+    //addFriend,
 }
