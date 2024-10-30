@@ -254,6 +254,21 @@ async function viewTable(queryObject) {
         return {success: false, error: "Failed to create chatroom."};
     }
 }
+
+async function deleteTable(queryObject) {
+    const Tables = client.db("CC_1st").collection("Tables");
+    const query = {
+        _id: new ObjectId(queryObject.id)
+    };
+
+    // Delete the user that matches the query
+    const deleted = await Tables.deleteOne(query);
+    if (deleted.deletedCount > 0) {
+        console.log(`Deleted user with ID: ${query._id}`); // Log the deleted user's ID
+    }
+    return deleted;
+}
+
 async function getSubscriptionDetails() {
     try {
         const collection = client.db("CC_1st").collection("Subscriptions");
@@ -358,6 +373,7 @@ module.exports = {
     listFriends,
     makeTable,
     viewTable,
+    deleteTable,
     getSubscriptionDetails,
     viewSubscription,
     purchaseSubscription,

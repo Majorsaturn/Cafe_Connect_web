@@ -1,5 +1,5 @@
 const http = require('http');
-const { run, viewTable, makeTable, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
+const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 const secret = 'jebus276'
 
@@ -309,14 +309,35 @@ var server = http.createServer(async function (req, res) {
                 console.log("Parsed data: ", tableData);
                 try {
                     const result = await makeTable(token, tableData);
-                    res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
+                    if(result.acknowledged) {
+                        res.writeHead(200, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
+                    }
+                    else{
+                        res.writeHead(401, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({message: 'Table creation failed.'}));
+                    }
                 } catch (error) {
                     console.error("Error processing request: ", error);
                     res.writeHead(400, {'Content-Type': 'application/json'});
                     res.end(JSON.stringify({message: 'Bad Request'}));
                 }
             })
+        }
+        else if(req.url.startsWith('/table/delete') && req.method === "DELETE"){
+            const queryObject = url.parse(req.url, true).query;
+
+            try {
+                const deleted = await deleteTable(queryObject);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(deleted));
+
+            } catch (error) {
+                console.error("Error retrieving users: ", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
         }
     }
     else if (req.url === "/subscription" && req.method === "GET") {
