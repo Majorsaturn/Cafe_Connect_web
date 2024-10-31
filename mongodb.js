@@ -92,23 +92,13 @@ async function deleteUser(queryObject) {
     return deleted;
 }
 
-async function editUser(queryObject, userData) {
+async function editUser(token, userData) {
     const Users = client.db("CC_1st").collection("Users");
-    const updateCriteria = {};
+    const decodedToken = jwt.verify(token, secret);
     const updateData = {};
-
-    // Prepare the criteria for finding the user
-    if (queryObject.id) {
-        try {
-            updateCriteria._id = new ObjectId(queryObject.id);  // Convert string id to ObjectId
-        } catch (error) {
-            console.error("Invalid ObjectId format: ", error);
-            throw new Error('Invalid ID format');  // This error should bubble up to index.js
-        }
-    }
-    if (queryObject.username) {
-        updateCriteria.username = queryObject.username;  // If username is provided, use it to search
-    }
+    const updateCriteria = {
+        _id: new ObjectId(decodedToken.userId),
+    };
 
     // Prepare the update data (if provided)
     if (userData.name) {
@@ -477,6 +467,78 @@ async function purchaseSubscription(userId, subscriptionDetails) {
     }
 }*/
 
+async function editTable(token, tableData) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+        const decodedToken = jwt.verify(token, secret);
+
+        const updateData = {};
+        const updateCriteria = {
+            createdby: new ObjectId(decodedToken.userId),
+        };
+
+        if (tableData.tablename) {
+            updateData.tablename = tableData.tablename;
+        }
+        if (tableData.maxseats) {
+            updateData.maxseats = tableData.maxseats;
+        }
+        if (tableData.pub_priv) {
+            updateData.pub_priv = tableData.pub_priv;
+        }
+
+        console.log('Update Criteria:', updateCriteria);
+        console.log('Update Data:', updateData);
+
+        // Perform the update
+        const result = await Tables.updateOne(updateCriteria, {$set: updateData});
+        return result;
+    }
+    catch (error) {
+        console.error("Error adding friend:", error);
+        return {success: false, error: "Failed to edit table."};
+    }
+}
+
+async function searchTable(queryObject) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+        const query = {};
+
+        if(queryObject.id) {
+            query._id = new ObjectId(queryObject.id)
+        }
+        else if(queryObject.tablename){
+            query.tablename = queryObject.tablename
+        }
+
+        const table = await Tables.find(query).toArray();
+        return table;
+    }
+    catch (error) {
+        console.error("Error finding chatroom:", error);
+        return {success: false, error: "Failed to create chatroom."};
+    }
+}
+
+async function getTableInvite(queryObject) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+        const query = {
+            _id: new ObjectId(queryObject.id)
+        };
+
+        const table = await Tables.findOne(query);
+        const tableInvite = table.invitelink;
+
+        return tableInvite;
+    }
+    catch (error) {
+        console.error("Error finding chatroom:", error);
+        return {success: false, error: "Failed to create chatroom."};
+    }
+}
+
 module.exports = {
     run,
     signUp,
@@ -498,4 +560,7 @@ module.exports = {
     viewSubscription,
     purchaseSubscription,
     //cancelSubscription,
+    editTable,
+    searchTable,
+    getTableInvite,
 }

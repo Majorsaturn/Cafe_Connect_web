@@ -1,5 +1,5 @@
 const http = require('http');
-const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription } = require('./mongodb');
+const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, editTable, searchTable, getTableInvite } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 const secret = 'jebus276'
 
@@ -93,32 +93,34 @@ var server = http.createServer(async function (req, res) {
         });
 
         req.on('end', async () => {
-            try {
-                const userData = JSON.parse(body);
-                const queryObject = url.parse(req.url, true).query;
+            const authHeader = req.headers['authorization'];
 
-                // Validate that either an ID or username is provided
-                if (!queryObject.id && !queryObject.username) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Please provide an ID or username to edit a user.' }));
-                    return;
+            if (authHeader) {
+                const token = authHeader;
+                try {
+                    const userData = JSON.parse(body);
+
+                    // Call the updateUser function from mongodb.js
+                    const result = await editUser(token, userData);
+
+                    // Handle the result of the update
+                    if (result.modifiedCount === 0) {
+                        res.writeHead(404, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'User not found or no changes made.'}));
+                    } else {
+                        res.writeHead(200, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'User details updated successfully.'}));
+                    }
+                } catch (error) {
+                    console.error("Error parsing JSON: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
                 }
-
-                // Call the updateUser function from mongodb.js
-                const result = await editUser(queryObject, userData);
-
-                // Handle the result of the update
-                if (result.modifiedCount === 0) {
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User not found or no changes made.' }));
-                } else {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User details updated successfully.' }));
-                }
-            } catch (error) {
-                console.error("Error parsing JSON: ", error);
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Bad Request' }));
+            }
+            else {
+                // If the Authorization header is missing
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
         });
     }
@@ -168,7 +170,7 @@ var server = http.createServer(async function (req, res) {
             }
         });
     }
-/*
+    /*
     else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
         // Parse query parameters from the URL
         const queryObject = url.parse(req.url, true).query;
@@ -203,8 +205,8 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
-    }*/
-
+    }
+       */
     else if(req.url.startsWith('/login') && req.method == "POST"){
 
         const queryObject = url.parse(req.url, true).query;
@@ -216,7 +218,7 @@ var server = http.createServer(async function (req, res) {
         res.end(JSON.stringify(result));
     }
 
-    else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET")){
+    else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET" || req.method === "DELETE")){
         let body = '';
 
         req.on('data', chunk => {
@@ -256,6 +258,22 @@ var server = http.createServer(async function (req, res) {
                         res.end(JSON.stringify({ success: false, error: error.message }));
                     }
                 }
+                else if (req.url.startsWith('/friends/remove') && req.method === "DELETE") {
+                            const parsedBody = JSON.parse(body);
+                            const friendUser = parsedBody.username;
+
+                            try {
+                                // Call removeFriend function
+                                const result = await removeFriend(token, friendUser);
+
+                                res.writeHead(200, { 'Content-Type': 'application/json' });
+                                res.end(JSON.stringify(result));
+                            } catch (error) {
+                                console.error("Error in /friends/remove route:", error);
+                                res.writeHead(500, { 'Content-Type': 'application/json' });
+                                res.end(JSON.stringify({ success: false, error: error.message }));
+                            }
+                }
             }
             else {
                 // If the Authorization header is missing
@@ -263,40 +281,161 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
         });
+
     }
 
-    else if (req.url.startsWith('/friends/remove') && req.method === "DELETE") {
-        let body = '';
+    else if(req.url.startsWith('/table')){
 
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-                const parsedBody = JSON.parse(body);
-                const friendUser = parsedBody.username;
+        if(req.method === "GET"){
+            if(req.url.startsWith('/table/search')){
+                const queryObject = url.parse(req.url, true).query;
 
                 try {
-                    // Call removeFriend function
-                    const result = await removeFriend(token, friendUser);
+                    // Call the searchUsers function from mongodb.js with the query parameters
+                    const table = await searchTable(queryObject);
 
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(result));
+                    // Send the retrieved users as JSON
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify(table));
+
                 } catch (error) {
-                    console.error("Error in /friends/remove route:", error);
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: error.message }));
+                    console.error("Error retrieving users: ", error);
+                    res.writeHead(500, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Internal Server Error'}));
                 }
-            } else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
-        });
+            else if(req.url.startsWith('/table/invite')){
+                const queryObject = url.parse(req.url, true).query;
+
+                try {
+                    // Call the searchUsers function from mongodb.js with the query parameters
+                    const table = await getTableInvite(queryObject);
+
+                    // Send the retrieved users as JSON
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify(table));
+
+                } catch (error) {
+                    console.error("Error retrieving users: ", error);
+                    res.writeHead(500, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Internal Server Error'}));
+                }
+            }
+            else {
+                const queryObject = url.parse(req.url, true).query;
+
+                try {
+                    // Call the searchUsers function from mongodb.js with the query parameters
+                    const table = await viewTable(queryObject);
+
+                    // Send the retrieved users as JSON
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify(table));
+
+                } catch (error) {
+                    console.error("Error retrieving users: ", error);
+                    res.writeHead(500, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Internal Server Error'}));
+                }
+            }
+        }
+        else if(req.url.startsWith('/table/create') && req.method === "POST") {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                if (!body) {
+                    console.error("No data received");
+                    res.writeHead(400, {'Content-Type': 'text/html'});
+                    res.end('<h1>Bad Request: No data received</h1>');
+                    return;
+                }
+                console.log("Received body: ", body);
+
+                const authHeader = req.headers['authorization'];
+
+                if (authHeader) {
+
+                }
+                const token = authHeader;
+                const tableData = JSON.parse(body); // Parse the incoming JSON data
+                console.log("Parsed data: ", tableData);
+                try {
+                    const result = await makeTable(token, tableData);
+                    if(result.acknowledged) {
+                        res.writeHead(200, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
+                    }
+                    else{
+                        res.writeHead(401, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({message: 'Table creation failed.'}));
+                    }
+                } catch (error) {
+                    console.error("Error processing request: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
+                }
+            })
+        }
+        else if(req.url.startsWith('/table/delete') && req.method === "DELETE"){
+            const queryObject = url.parse(req.url, true).query;
+
+            try {
+                const deleted = await deleteTable(queryObject);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(deleted));
+
+            } catch (error) {
+                console.error("Error retrieving users: ", error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            }
+        }
+
+        else if(req.url.startsWith('/table/settings') && req.method === "PUT"){
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                const authHeader = req.headers['authorization'];
+
+                if (authHeader) {
+                    const token = authHeader;
+                    try {
+                        const tableData = JSON.parse(body);
+
+                        // Call the updateUser function from mongodb.js
+                        const result = await editTable(token, tableData);
+
+                        // Handle the result of the update
+                        if (result.modifiedCount === 0) {
+                            res.writeHead(404, {'Content-Type': 'application/json'});
+                            res.end(JSON.stringify({message: 'Table not found or no changes made.'}));
+                        } else {
+                            res.writeHead(200, {'Content-Type': 'application/json'});
+                            res.end(JSON.stringify({message: 'Table details updated successfully.'}));
+                        }
+                    } catch (error) {
+                        console.error("Error parsing JSON: ", error);
+                        res.writeHead(400, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Bad Request'}));
+                    }
+                }
+                else {
+                    // If the Authorization header is missing
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
+                }
+            })
+        }
+
     }
 
     else if (req.url.startsWith('/users/block') && req.method === "POST") {
@@ -397,82 +536,7 @@ var server = http.createServer(async function (req, res) {
         }
     }
 
-    else if(req.url.startsWith('/table')){
 
-        if(req.method === "GET"){
-            const queryObject = url.parse(req.url, true).query;
-
-            try {
-                // Call the searchUsers function from mongodb.js with the query parameters
-                const table = await viewTable(queryObject);
-
-                // Send the retrieved users as JSON
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(table));
-
-            } catch (error) {
-                console.error("Error retrieving users: ", error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Internal Server Error' }));
-            }
-        }
-        else if(req.url.startsWith('/table/create') && req.method === "POST") {
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', async () => {
-                if (!body) {
-                    console.error("No data received");
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request: No data received</h1>');
-                    return;
-                }
-                console.log("Received body: ", body);
-
-                const authHeader = req.headers['authorization'];
-
-                if (authHeader) {
-
-                }
-                const token = authHeader;
-                const tableData = JSON.parse(body); // Parse the incoming JSON data
-                console.log("Parsed data: ", tableData);
-                try {
-                    const result = await makeTable(token, tableData);
-                    if(result.acknowledged) {
-                        res.writeHead(200, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
-                    }
-                    else{
-                        res.writeHead(401, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({message: 'Table creation failed.'}));
-                    }
-                } catch (error) {
-                    console.error("Error processing request: ", error);
-                    res.writeHead(400, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Bad Request'}));
-                }
-            })
-        }
-        else if(req.url.startsWith('/table/delete') && req.method === "DELETE"){
-            const queryObject = url.parse(req.url, true).query;
-
-            try {
-                const deleted = await deleteTable(queryObject);
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(deleted));
-
-            } catch (error) {
-                console.error("Error retrieving users: ", error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Internal Server Error' }));
-            }
-        }
-    }
     else if (req.url === "/subscription" && req.method === "GET") {
         try {
             const result = await getSubscriptionDetails();
