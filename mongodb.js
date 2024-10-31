@@ -216,6 +216,122 @@ async function listFriends(token){
     }
 }
 
+async function removeFriend(token, friendUser) {
+    try {
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Check if the friend exists in the user's friends list
+        const user = await collection.findOne({ _id: userId, friends: friendUser });
+        if (!user) {
+            console.log(`Friend ${friendUser} not found in the user's friend list.`);
+            return { success: false, message: `Friend ${friendUser} is not in your friends list.` };
+        }
+
+        // Remove the friend from the user's friends list
+        const result = await collection.updateOne(
+            { _id: userId },
+            { $pull: { friends: friendUser } }
+        );
+
+        if (result.modifiedCount > 0) {
+            console.log(`Friend ${friendUser} removed successfully!`);
+            return { success: true, message: `Friend ${friendUser} removed successfully!` };
+        } else {
+            console.log(`Failed to remove friend ${friendUser}.`);
+            return { success: false, message: `Failed to remove friend ${friendUser}.` };
+        }
+    } catch (error) {
+        console.error("Error removing friend:", error);
+        return { success: false, error: "Failed to authenticate or remove friend." };
+    }
+}
+
+async function blockUser(token, blockUser) {
+    try {
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Check if the user to be blocked exists
+        const userToBlock = await collection.findOne({ username: blockUser });
+        if (!userToBlock) {
+            console.log(`User ${blockUser} not found.`);
+            return { success: false, message: `User ${blockUser} does not exist.` };
+        }
+
+        // Add the user to the blocked list of the requester, ensuring no duplicates
+        const result = await collection.updateOne(
+            { _id: userId },
+            { $addToSet: { blocked: blockUser } }
+        );
+
+        if (result.modifiedCount > 0) {
+            console.log(`User ${blockUser} blocked successfully!`);
+            return { success: true, message: `User ${blockUser} blocked successfully!` };
+        } else {
+            console.log(`Failed to block user ${blockUser}.`);
+            return { success: false, message: `Failed to block user ${blockUser}.` };
+        }
+    } catch (error) {
+        console.error("Error blocking user:", error);
+        return { success: false, error: "Failed to authenticate or block user." };
+    }
+}
+
+async function unblockUser(token, blockedUser) {
+    try {
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Remove the user from the blocked list using $pull
+        const result = await collection.updateOne(
+            { _id: userId },
+            { $pull: { blocked: blockedUser } }
+        );
+
+        if (result.modifiedCount > 0) {
+            console.log(`User ${blockedUser} has been unblocked successfully.`);
+            return { success: true, message: `User ${blockedUser} has been unblocked successfully.` };
+        } else {
+            return { success: false, message: `User ${blockedUser} is not in the blocked list.` };
+        }
+    } catch (error) {
+        console.error("Error unblocking user:", error);
+        return { success: false, error: "Failed to authenticate or unblock user." };
+    }
+}
+
+async function listBlockedUsers(token) {
+    try {
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Retrieve the user's blocked list
+        const user = await collection.findOne(
+            { _id: userId },
+            { projection: { blocked: 1 } } // Only fetch the "blocked" field
+        );
+
+        if (!user || !user.blocked) {
+            return { success: false, message: "No blocked users found or user does not exist." };
+        }
+
+        console.log("Blocked users retrieved successfully:", user.blocked);
+        return { success: true, blockedUsers: user.blocked };
+    } catch (error) {
+        console.error("Error retrieving blocked users:", error);
+        return { success: false, error: "Failed to authenticate or retrieve blocked users." };
+    }
+}
+
 async function makeTable(token, tableData){
     try{
         const Tables = client.db("CC_1st").collection("Tables");
@@ -371,6 +487,10 @@ module.exports = {
     userLogin,
     addFriend,
     listFriends,
+    removeFriend,
+    blockUser,
+    unblockUser,
+    listBlockedUsers,
     makeTable,
     viewTable,
     deleteTable,
