@@ -4,6 +4,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const secret = 'jebus276'
 const uri = "mongodb+srv://nicoanovak:Xw7us3yzSyxXVGTW@cafeconnect1.pg0cb.mongodb.net/?retryWrites=true&w=majority&appName=cafeconnect1";
+
+// default user settings
+const defaultSettings = {
+    input: "test mic",
+    output: "test speaker",
+    light_dark: true,
+    notifications: false
+}
+
+
 // Create a MongoClient with MongoClientOptions
 const client = new MongoClient(uri, {
     serverApi: {
@@ -29,17 +39,32 @@ async function run() {
 
 async function signUp(userData){
     // Insert data into the collection and get the result
-    Users = client.db("CC_1st").collection("Users");
-    const { password, ...rest } = userData;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const userExists = await Users.findOne({ username: rest.username });
+    const Users = client.db("CC_1st").collection("Users");
+    const Settings = client.db("CC_1st").collection("User_Settings");
+    const updateCriteria = {};
 
+    const userExists = await Users.findOne({ username: userData.username });
     if (userExists) {
         throw new Error('User already exists');
     }
 
-    result = await Users.insertOne({ ...rest, password: hashedPassword }); //signup id
+    const settingsResult = await Settings.insertOne(defaultSettings);
+    console.log(settingsResult.insertedId);
+    userData.settingsId = settingsResult.insertedId;
+
+    const { password, ...rest } = userData;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const result = await Users.insertOne({ ...rest, password: hashedPassword }); //signup id
     console.log("Insert result:", result);
+
+    updateCriteria._id = settingsResult.insertedId;
+    const updateData = {
+        userId: result.insertedId
+    };
+    console.log(updateData);
+    await Settings.updateOne(updateCriteria, { $set: updateData });
+
     return result;
 }
 
@@ -67,27 +92,20 @@ async function searchUsers(queryObject) {
 }
 
 async function deleteUser(queryObject) {
-    const collection = client.db("CC_1st").collection("Users");
-    const query = {};
+    const Users = client.db("CC_1st").collection("Users");
+    const Settings = client.db("CC_1st").collection("User_Settings");
+    const query = {
+        _id: new ObjectId(queryObject.id),
+    };
+    const querySettings = {
+        userId: new ObjectId(queryObject.id),
+    };
 
-    if (queryObject.email) {
-        query.email = queryObject.email;
-    }
-    if (queryObject.name) {
-        query.name = queryObject.name;
-    }
-    if (queryObject.username) {
-        query.username = queryObject.username; // Search by username
-    }
-    if (queryObject.id) {
-        query._id = new ObjectId(queryObject.id); // Search by id
-    }
-
-    const id = new ObjectId(query._id);
-    // Delete the user that matches the query
-    const deleted = await collection.deleteOne(query);
+    // Delete the user that matches the query along with the settings
+    const deleted = await Users.deleteOne(query);
+    const deletedSettings = await Settings.deleteOne(querySettings);
     if (deleted.deletedCount > 0) {
-        console.log(`Deleted user with ID: ${id}`); // Log the deleted user's ID
+        console.log(`Deleted user with ID: ${query._id} along with their settings`); // Log the deleted user's ID
     }
     return deleted;
 }
