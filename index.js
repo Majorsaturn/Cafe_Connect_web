@@ -1,5 +1,5 @@
 const http = require('http');
-const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, editTable, searchTable, getTableInvite } = require('./mongodb');
+const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
 const secret = 'jebus276'
 
@@ -170,43 +170,47 @@ var server = http.createServer(async function (req, res) {
             }
         });
     }
-    /*
-    else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
-        // Parse query parameters from the URL
-        const queryObject = url.parse(req.url, true).query;
 
-        try {
-            const collection = client.db("CC_1st").collection("Users");
+    else if (req.url.startsWith('/profile/settings') && req.method == "PUT") {
+        let body = '';
 
-            // Use the query parameters to search for users
-            const query = {};
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
 
-            if (queryObject.email) {
-                query.email = queryObject.email;
+        req.on('end', async () => {
+            const authHeader = req.headers['authorization'];
+
+            if (authHeader) {
+                const token = authHeader;
+                try {
+                    const userData = JSON.parse(body);
+
+                    // Call the updateUser function from mongodb.js
+                    const result = await editSettings(token, userData);
+
+                    // Handle the result of the update
+                    if (result.modifiedCount === 0) {
+                        res.writeHead(404, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Settings not found or no changes made.'}));
+                    } else {
+                        res.writeHead(200, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Settings updated successfully.'}));
+                    }
+                } catch (error) {
+                    console.error("Error parsing JSON: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
+                }
             }
-
-            if (queryObject.name) {
-                query.name = queryObject.name;
+            else {
+                // If the Authorization header is missing
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
-            if (queryObject.username) {
-                query.username = queryObject.username; // Search by username
-            }
-            const userDoc = collection.findOne({username: query.username});
-            const userId = new ObjectId(userDoc.id);
-            // Find users that match the query
-            const userUpdate = await collection.updateOne(userId, {$set: updateData}).toArray();
-
-            // Send the retrieved users as JSON
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(users));
-
-        } catch (error) {
-            console.error("Error retrieving users: ", error);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'Internal Server Error' }));
-        }
+        });
     }
-       */
+
     else if(req.url.startsWith('/login') && req.method == "POST"){
 
         const queryObject = url.parse(req.url, true).query;

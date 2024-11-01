@@ -557,6 +557,34 @@ async function getTableInvite(queryObject) {
     }
 }
 
+async function editSettings(token, settingsData){
+    const Settings = client.db("CC_1st").collection("User_Settings");
+    const decodedToken = jwt.verify(token, secret);
+    const updateData = {};
+    const updateCriteria = {
+        userId: new ObjectId(decodedToken.userId),
+    };
+
+    if(settingsData.input){
+        updateData.input = settingsData.input;
+    }
+    if(settingsData.output){
+        updateData.output = settingsData.output;
+    }
+    if(settingsData.light_dark === false || settingsData.light_dark === true){
+        updateData.light_dark = settingsData.light_dark;
+    }
+    if(settingsData.notifications === false || settingsData.notifications === true){
+        updateData.notifications = settingsData.notifications;
+    }
+    console.log(await Settings.findOne(updateCriteria));
+    console.log('Update Criteria:', updateCriteria);
+    console.log('Update Data:', updateData);
+
+    const result = await Settings.updateOne(updateCriteria, { $set: updateData });
+    return result
+}
+
 module.exports = {
     run,
     signUp,
@@ -581,4 +609,5 @@ module.exports = {
     editTable,
     searchTable,
     getTableInvite,
+    editSettings,
 }
