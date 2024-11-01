@@ -1,6 +1,7 @@
 const http = require('http');
-const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
+const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite } = require('./mongodb');
 const url = require('url');  // To parse query parameters from the URL
+const jwt = require('jsonwebtoken');
 const secret = 'jebus276'
 
 run();
@@ -170,47 +171,43 @@ var server = http.createServer(async function (req, res) {
             }
         });
     }
+    /*
+    else if (req.url.startsWith('/profile/settings') && req.method == "POST") {
+        // Parse query parameters from the URL
+        const queryObject = url.parse(req.url, true).query;
 
-    else if (req.url.startsWith('/profile/settings') && req.method == "PUT") {
-        let body = '';
+        try {
+            const collection = client.db("CC_1st").collection("Users");
 
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
+            // Use the query parameters to search for users
+            const query = {};
 
-        req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-                try {
-                    const userData = JSON.parse(body);
-
-                    // Call the updateUser function from mongodb.js
-                    const result = await editSettings(token, userData);
-
-                    // Handle the result of the update
-                    if (result.modifiedCount === 0) {
-                        res.writeHead(404, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Settings not found or no changes made.'}));
-                    } else {
-                        res.writeHead(200, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Settings updated successfully.'}));
-                    }
-                } catch (error) {
-                    console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Bad Request'}));
-                }
+            if (queryObject.email) {
+                query.email = queryObject.email;
             }
-            else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
+
+            if (queryObject.name) {
+                query.name = queryObject.name;
             }
-        });
+            if (queryObject.username) {
+                query.username = queryObject.username; // Search by username
+            }
+            const userDoc = collection.findOne({username: query.username});
+            const userId = new ObjectId(userDoc.id);
+            // Find users that match the query
+            const userUpdate = await collection.updateOne(userId, {$set: updateData}).toArray();
+
+            // Send the retrieved users as JSON
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(users));
+
+        } catch (error) {
+            console.error("Error retrieving users: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+        }
     }
-
+       */
     else if(req.url.startsWith('/login') && req.method == "POST"){
 
         const queryObject = url.parse(req.url, true).query;
@@ -560,37 +557,37 @@ var server = http.createServer(async function (req, res) {
     }
 
     else if (req.url.startsWith("/profile/settings/subscription") && req.method === "GET") {
-        // Parse query parameters to get the userId
-        const queryObject = url.parse(req.url, true).query;
+        const authHeader = req.headers['authorization'];
 
-        // Validate that a userId is provided
-        if (!queryObject.userId) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'User ID is required to view subscription details.' }));
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Authorization token is required' }));
             return;
         }
 
+        const token = authHeader.split(' ')[1]; // Extract the token
+
         try {
-            // Call the viewSubscription function to get subscription details
-            const result = await viewSubscription(queryObject.userId);
+            const decodedToken = jwt.verify(token, secret); // Verify the token
+            const userId = decodedToken.userId; // Get the userId from the token
+
+            const result = await viewSubscription(userId); // Call the viewSubscription function
 
             if (result.success) {
-                // Send subscription details as JSON
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Subscription details retrieved successfully.', subscription: result.data }));
+                res.end(JSON.stringify({ subscription: result.subscription })); // Return the subscription details
             } else {
-                // Subscription not found
                 res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: result.message }));
+                res.end(JSON.stringify({ message: result.message })); // Handle error message
             }
         } catch (error) {
-            console.error("Error retrieving subscription: ", error);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            console.error("Error in /subscription/view route:", error);
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Invalid token' }));
         }
     }
 
-    else if (req.url.startsWith("/subscription/purchase") && req.method === "POST") {
+    else if (req.url === "/subscription/purchase" && req.method === "POST") {
         let body = '';
 
         req.on('data', chunk => {
@@ -598,35 +595,56 @@ var server = http.createServer(async function (req, res) {
         });
 
         req.on('end', async () => {
-            try {
-                const { userId, subscriptionDetails } = JSON.parse(body);
+            const authHeader = req.headers['authorization'];
 
-                // Check if both userId and subscriptionDetails are provided
-                if (!userId || !subscriptionDetails) {
+            if (!authHeader) {
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Authorization token is required' }));
+                return;
+            }
+
+            try {
+                const requestData = JSON.parse(body);
+                const subscriptionId = requestData.subscriptionId;
+
+                if (!subscriptionId) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'userId and subscriptionDetails are required' }));
+                    res.end(JSON.stringify({ message: 'Subscription ID is required' }));
                     return;
                 }
 
-                const result = await purchaseSubscription(userId, subscriptionDetails);
+                const token = authHeader;
 
-                // Send response based on the result
-                if (result.success) {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: result.message }));
-                } else {
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: result.message }));
+                try {
+                    const decodedToken = jwt.verify(token, secret);  // Log any JWT errors here
+                    const userId = decodedToken.userId;
+
+                    const result = await purchaseSubscription(userId, subscriptionId);
+
+                    if (result.success) {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ message: 'Subscription purchased successfully' }));
+                    } else {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ message: result.message }));
+                    }
+                } catch (jwtError) {
+                    console.error("JWT Verification failed:", jwtError.message);
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Invalid token' }));
                 }
             } catch (error) {
-                console.error("Error handling activateSubscription route:", error);
+                console.error("Error in /subscription/purchase route parsing or handling:", error.message);
+                console.error(error.stack);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ message: 'Internal Server Error' }));
             }
         });
     }
 
-    /*else if (req.url === "/subscription/cancel" && req.method === "POST") {
+
+
+    else if (req.url === "/subscription/cancel" && req.method === "POST") {
         let body = '';
 
         req.on('data', chunk => {
@@ -635,16 +653,19 @@ var server = http.createServer(async function (req, res) {
 
         req.on('end', async () => {
             try {
-                const requestData = JSON.parse(body);
-                const userId = requestData.userId; // Expecting userId in the body
+                const authHeader = req.headers['authorization'];
 
-                if (!userId) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User ID is required' }));
+                if (!authHeader) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Authorization token is missing' }));
                     return;
                 }
 
-                const result = await cancelUserSubscription(userId);
+                const token = authHeader;
+                const decodedToken = jwt.verify(token, secret); // Verify the token
+                const userId = decodedToken.userId;
+
+                const result = await cancelSubscription(userId);
 
                 if (result.success) {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -659,7 +680,8 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ message: 'Internal Server Error' }));
             }
         });
-    }*/
+    }
+
 
 });
 

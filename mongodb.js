@@ -408,52 +408,11 @@ async function getSubscriptionDetails() {
 }
 
 async function viewSubscription(userId) {
-    const collection = client.db("CC_1st").collection("Users");
-
-    // Find the user with the specified userId and retrieve the subscription data
-    const user = await collection.findOne(
-        { _id: new ObjectId(userId) },
-        { projection: { subscription: 1 } } // Only retrieve the subscription field
-    );
-
-    // Check if user or subscription data exists
-    return user && user.subscription
-        ? { success: true, data: user.subscription }
-        : { success: false, message: 'Subscription not found for this user' };
-}
-
-async function purchaseSubscription(userId, subscriptionDetails) {
-    try {
-        const collection = client.db("CC_1st").collection("Users");
-
-        // Validate userId format
-        if (!ObjectId.isValid(userId)) {
-            return { success: false, message: 'Invalid user ID format' };
-        }
-
-        // Update the user's subscription details
-        const result = await collection.updateOne(
-            { _id: new ObjectId(userId) },
-            { $set: { subscription: subscriptionDetails } }
-        );
-
-        if (result.modifiedCount > 0) {
-            return { success: true, message: 'Subscription activated successfully' };
-        } else {
-            return { success: false, message: 'User not found' };
-        }
-    } catch (error) {
-        console.error("Error in activateSubscription:", error);
-        return { success: false, message: 'Internal Server Error' };
-    }
-}
-
-/*async function cancelSubscription(userId) {
     try {
         const collectionUsers = client.db("CC_1st").collection("Users");
         const collectionSubscriptions = client.db("CC_1st").collection("Subscriptions");
 
-        // Find the user in the Users collection
+        // Find the user by their ID
         const user = await collectionUsers.findOne({ _id: new ObjectId(userId) });
 
         if (!user) {
@@ -462,28 +421,111 @@ async function purchaseSubscription(userId, subscriptionDetails) {
 
         // Check if the user has an active subscription
         if (!user.subscriptionId) {
-            return { success: false, message: 'No active subscription to cancel' };
+            return { success: false, message: 'No active subscription' };
         }
 
-        // Find the subscription in the Subscriptions collection
+        // Find the subscription by its ID
         const subscription = await collectionSubscriptions.findOne({ _id: new ObjectId(user.subscriptionId) });
 
         if (!subscription) {
             return { success: false, message: 'Subscription not found' };
         }
 
-        // Update the user's subscriptionId to null (or remove subscription information)
-        await collectionUsers.updateOne({ _id: new ObjectId(userId) }, { $set: { subscriptionId: null } });
+        return { success: true, subscription };
+    } catch (error) {
+        console.error("Error retrieving subscription:", error);
+        return { success: false, message: 'Error retrieving subscription' };
+    }
+}
 
-        // Optionally, you can also update the subscription status (if you have a status field)
-        await collectionSubscriptions.updateOne({ _id: new ObjectId(user.subscriptionId) }, { $set: { status: 'Cancelled' } });
+
+async function purchaseSubscription(userId, subscriptionId) {
+    try {
+        const collectionUsers = client.db("CC_1st").collection("Users");
+        const collectionSubscriptions = client.db("CC_1st").collection("Subscriptions");
+
+        // Verify that the subscription exists
+        const subscription = await collectionSubscriptions.findOne({ _id: new ObjectId(subscriptionId) });
+        if (!subscription) {
+            console.error(`Subscription with ID ${subscriptionId} not found`);
+            return { success: false, message: 'Subscription not found' };
+        }
+
+        // Update the user's subscription
+        const result = await collectionUsers.updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: { subscriptionId: new ObjectId(subscriptionId), subscriptionStartDate: new Date() } }
+        );
+
+        if (result.modifiedCount === 0) {
+            console.error(`Failed to update user ${userId} with subscription ID ${subscriptionId}`);
+            return { success: false, message: 'Failed to update user subscription' };
+        }
 
         return { success: true };
     } catch (error) {
-        console.error("Error in cancelUserSubscription:", error);
+        console.error("Error in purchaseSubscription:", error.message);  // Log error message for details
+        console.error(error.stack); // Log stack trace to understand where the error is happening
+        return { success: false, message: 'Error purchasing subscription' };
+    }
+}
+
+
+
+async function cancelSubscription(userId) {
+    try {
+        const collectionUsers = client.db("CC_1st").collection("Users");
+        const collectionSubscriptions = client.db("CC_1st").collection("Subscriptions");
+
+        // Find the user in the Users collection
+        const user = await collectionUsers.findOne({ _id: new ObjectId(userId) });
+        if (!user) {
+            console.log("User not found with ID:", userId);
+            return { success: false, message: 'User not found' };
+        }
+
+        // Check if the user has an active subscriptionId
+        if (!user.subscriptionId) {
+            console.log("No subscription ID found for user:", userId);
+            return { success: false, message: 'No active subscription to cancel' };
+        }
+
+        // Validate that the subscriptionId is correctly formatted as an ObjectId
+        let subscriptionId;
+        try {
+            subscriptionId = new ObjectId(user.subscriptionId);
+        } catch (err) {
+            console.error("Invalid subscriptionId format:", user.subscriptionId);
+            return { success: false, message: 'Invalid subscription ID format.' };
+        }
+
+        // Find the subscription in the Subscriptions collection
+        const subscription = await collectionSubscriptions.findOne({ _id: subscriptionId });
+        if (!subscription) {
+            console.log("Subscription document not found for ID:", subscriptionId);
+            return { success: false, message: 'Subscription not found' };
+        }
+
+        // Update the user's subscriptionId to null (or remove subscription information)
+        await collectionUsers.updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: { subscriptionId: null } }
+        );
+
+        // Optionally, update the subscription status to 'Cancelled'
+        await collectionSubscriptions.updateOne(
+            { _id: subscriptionId },
+            { $set: { status: 'Cancelled' } }
+        );
+
+        console.log("Subscription cancelled successfully for user:", userId);
+        return { success: true, message: 'Subscription cancelled successfully' };
+    } catch (error) {
+        console.error("Error in cancelSubscription:", error);
         return { success: false, message: 'Error cancelling subscription' };
     }
-}*/
+}
+
 
 async function editTable(token, tableData) {
     try {
@@ -605,7 +647,7 @@ module.exports = {
     getSubscriptionDetails,
     viewSubscription,
     purchaseSubscription,
-    //cancelSubscription,
+    cancelSubscription,
     editTable,
     searchTable,
     getTableInvite,
