@@ -160,7 +160,7 @@ async function userLogin(queryObject){
             const token = jwt.sign(
                 { userId: user._id, username: user.username },
                 secret, // Replace with a secure key, ideally from an environment variable
-                { expiresIn: '1h' } // Token expires in 1 hour, adjust as needed
+                { expiresIn: '12h' } // Token expires in 1 hour, adjust as needed
             );
             console.log(jwt.verify(token, secret));
             console.log(token);
