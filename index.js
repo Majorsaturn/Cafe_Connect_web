@@ -3,13 +3,26 @@ const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFr
 const url = require('url');  // To parse query parameters from the URL
 const jwt = require('jsonwebtoken');
 const secret = 'jebus276'
+const fs = require('fs');
+const path = require('path');
 
 run();
 
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
-    if (req.url == '/signup') {
+    if (req.url === '/signup' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
+            if (err) {
+                res.writeHead(500, {'Content-Type': 'text/html'});
+                res.end('<h1>Server Error</h1>');
+            } else {
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                res.end(data);
+            }
+        });
+    }
+    else if (req.url == '/signup') {
         if (req.method == "POST") {
             let body = '';
 
@@ -21,7 +34,7 @@ var server = http.createServer(async function (req, res) {
 
                 if (!body) {
                     console.error("No data received");
-                    res.writeHead(400, { 'Content-Type': 'text/html' });
+                    res.writeHead(400, {'Content-Type': 'text/html'});
                     res.end('<h1>Bad Request: No data received</h1>');
                     return;
                 }
@@ -37,16 +50,33 @@ var server = http.createServer(async function (req, res) {
                     console.log("Inserted ID: ", result.insertedId);
 
                     // Send the insertedId in the response
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User registered!', id: result.insertedId }));
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'User registered!', id: result.insertedId}));
                 } catch (error) {
                     console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, { 'Content-Type': 'text/html' });
+                    res.writeHead(400, {'Content-Type': 'text/html'});
                     res.end('<h1>Bad Request</h1>');
                 }
             });
         }
-    }
+            else if (req.url === '/script.js' && req.method === 'GET') {
+                // Serve script.js as a static file
+                fs.readFile(path.join(__dirname, 'script.js'), (err, data) => {
+                    if (err) {
+                        res.writeHead(500, { 'Content-Type': 'text/html' });
+                        res.end('<h1>Server Error</h1>');
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+                        res.end(data);
+                    }
+                });
+            }
+            else {
+                res.writeHead(404, { 'Content-Type': 'text/html' });
+                res.end('<h1>404: Page Not Found</h1>');
+            }
+        }
+
 
     else if (req.url.startsWith('/usersearch') && req.method == "GET") {
         // Parse query parameters from the URL
@@ -690,7 +720,9 @@ var server = http.createServer(async function (req, res) {
 });
 
 // Start the server
-server.listen(5000);
+server.listen(5000, () => {
+    console.log('Server running on http://localhost:5000');
+});
 console.log('Node.js web server at port 5000 is running..');
 
 
