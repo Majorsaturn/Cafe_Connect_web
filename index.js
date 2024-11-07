@@ -11,74 +11,62 @@ run();
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
-    if (req.url == '/signup') {
-        if (req.method == "POST") {
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString(); // Convert Buffer to string
-            });
-
-            req.on('end', async () => {
-
-                if (!body) {
-                    console.error("No data received");
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request: No data received</h1>');
-                    return;
-                }
-                console.log("Received body: ", body); // Log the raw body
-                try {
-                    const userData = JSON.parse(body); // Parse the incoming JSON data
-                    console.log("Parsed data: ", userData); // Log parsed data
-
-                    // Insert data into the collection and get the result
-                    const result = await signUp(userData); //signup id
-
-                    // Log the insertedId
-                    console.log("Inserted ID: ", result.insertedId);
-
-                    // Send the insertedId in the response
-                    res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'User registered!', id: result.insertedId}));
-                } catch (error) {
-                    console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request</h1>');
-                }
-            });
-        }
-        if (req.method === 'GET') {
-            fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
-                if (err) {
-                    res.writeHead(500, {'Content-Type': 'text/html'});
-                    res.end('<h1>Server Error</h1>');
-                } else {
-                    res.writeHead(200, {'Content-Type': 'text/html'});
-                    res.end(data);
-                }
-            });
-        }
-            else if (req.url === '/script.js' && req.method === 'GET') {
-                // Serve script.js as a static file
-                fs.readFile(path.join(__dirname, 'script.js'), (err, data) => {
-                    if (err) {
-                        res.writeHead(500, { 'Content-Type': 'text/html' });
-                        res.end('<h1>Server Error</h1>');
-                    } else {
-                        res.writeHead(200, { 'Content-Type': 'application/javascript' });
-                        res.end(data);
-                    }
-                });
+    if (req.url === '/signup' && req.method === 'GET') {
+        // Serve the signup.html file
+        fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
+            if (err) {
+                res.writeHead(500, {'Content-Type': 'text/html'});
+                res.end('<h1>Server Error</h1>');
+            } else {
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                res.end(data);
             }
-            else {
-                res.writeHead(404, { 'Content-Type': 'text/html' });
-                res.end('<h1>404: Page Not Found</h1>');
+        });
+    } else if (req.url === '/script.js' && req.method === 'GET') {
+        // Serve the script.js file when requested by signup.html
+        fs.readFile(path.join(__dirname, 'script.js'), (err, data) => {
+            if (err) {
+                res.writeHead(500, {'Content-Type': 'application/javascript'});
+                res.end('// Error loading script.js');
+            } else {
+                res.writeHead(200, {'Content-Type': 'application/javascript'});
+                res.end(data);
             }
-        }
+        });
+    } else if (req.url === '/signup' && req.method === 'POST') {
+        // Handle the form submission for signup
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+
+        req.on('end', async () => {
+            if (!body) {
+                console.error("No data received");
+                res.writeHead(400, {'Content-Type': 'text/html'});
+                res.end('<h1>Bad Request: No data received</h1>');
+                return;
+            }
+            try {
+                const userData = JSON.parse(body);
+                const result = await signUp(userData);
+
+                res.writeHead(200, {'Content-Type': 'application/json'});
+                res.end(JSON.stringify({message: 'User registered!', id: result.insertedId}));
+            } catch (error) {
+                console.error("Error parsing JSON: ", error);
+                res.writeHead(400, {'Content-Type': 'text/html'});
+                res.end('<h1>Bad Request</h1>');
+            }
+        });
+    } else {
+        // Default response for any other request
+        res.writeHead(404, {'Content-Type': 'text/html'});
+        res.end('<h1>404: Page Not Found</h1>');
+    }
 
 
-    else if (req.url.startsWith('/usersearch') && req.method == "GET") {
+    if (req.url.startsWith('/usersearch') && req.method == "GET") {
         // Parse query parameters from the URL
         const queryObject = url.parse(req.url, true).query;
 

@@ -20,15 +20,15 @@ async function submitSignup(event) {
         const response = await fetch('http://localhost:5000/signup', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/javascript'
             },
             body: JSON.stringify(userData)
         });
 
         if (response.ok) {
             const result = await response.json();
-            displayMessage('Signup successful! Your ID: ' + result.id, 'green');
-            document.querySelector(".signup-form").reset(); // Reset form
+            displayMessage('You have successfully created an account!', 'green');
+            document.getElementById('signupForm').reset();  // Reset the form here on success
         } else {
             const errorResult = await response.json();
             displayMessage('Signup failed: ' + (errorResult.message || 'Please try again.'), 'red');
@@ -44,5 +44,3 @@ function displayMessage(message, color) {
     messageDiv.innerText = message;
     messageDiv.style.color = color;
 }
-
-
