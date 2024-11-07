@@ -11,18 +11,7 @@ run();
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
-    if (req.url === '/signup' && req.method === 'GET') {
-        fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
-            if (err) {
-                res.writeHead(500, {'Content-Type': 'text/html'});
-                res.end('<h1>Server Error</h1>');
-            } else {
-                res.writeHead(200, {'Content-Type': 'text/html'});
-                res.end(data);
-            }
-        });
-    }
-    else if (req.url == '/signup') {
+    if (req.url == '/signup') {
         if (req.method == "POST") {
             let body = '';
 
@@ -56,6 +45,17 @@ var server = http.createServer(async function (req, res) {
                     console.error("Error parsing JSON: ", error);
                     res.writeHead(400, {'Content-Type': 'text/html'});
                     res.end('<h1>Bad Request</h1>');
+                }
+            });
+        }
+        if (req.method === 'GET') {
+            fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
+                if (err) {
+                    res.writeHead(500, {'Content-Type': 'text/html'});
+                    res.end('<h1>Server Error</h1>');
+                } else {
+                    res.writeHead(200, {'Content-Type': 'text/html'});
+                    res.end(data);
                 }
             });
         }
