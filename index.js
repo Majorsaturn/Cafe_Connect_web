@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 run();
+const staticDir = path.join(__dirname, 'public');
 
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
@@ -30,10 +31,10 @@ var server = http.createServer(async function (req, res) {
     } else if (req.url === '/signup.js' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'signup.js'), (err, data) => {
             if (err) {
-                res.writeHead(500, { 'Content-Type': 'application/javascript' });
+                res.writeHead(500, {'Content-Type': 'application/javascript'});
                 return res.end('// Error loading signup.js');
             }
-            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.writeHead(200, {'Content-Type': 'application/javascript'});
             res.end(data);
         });
     } else if (req.url === '/signup' && req.method === 'POST') {
@@ -92,8 +93,26 @@ var server = http.createServer(async function (req, res) {
             }
         });
     } else {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404: Page Not Found</h1>');
+        // Construct the file path based on the request URL
+        const filePath = path.join(staticDir, req.url);
+
+        // Serve the file if it exists in the static directory
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/html' });
+                return res.end('<h1>404 - Not Found</h1>');
+            }
+
+            // Determine the Content-Type based on file extension
+            const ext = path.extname(filePath);
+            let contentType = 'text/plain';
+            if (ext === '.css') contentType = 'text/css';
+            else if (ext === '.js') contentType = 'application/javascript';
+            else if (ext === '.html') contentType = 'text/html';
+
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        });
     }
 
 
