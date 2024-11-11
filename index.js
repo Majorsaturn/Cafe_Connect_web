@@ -11,57 +11,88 @@ run();
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
+    if (req.url === '/') {
+        // Redirect root URL to login page
+        res.writeHead(302, { 'Location': '/login' });
+        return res.end();
+    }
+
+    // SERVE SIGNUP PAGE
     if (req.url === '/signup' && req.method === 'GET') {
-        // Serve the signup.html file
         fs.readFile(path.join(__dirname, 'signup.html'), (err, data) => {
             if (err) {
-                res.writeHead(500, {'Content-Type': 'text/html'});
-                res.end('<h1>Server Error</h1>');
-            } else {
-                res.writeHead(200, {'Content-Type': 'text/html'});
-                res.end(data);
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                return res.end('<h1>Server Error</h1>');
             }
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
         });
-    } else if (req.url === '/script.js' && req.method === 'GET') {
-        // Serve the script.js file when requested by signup.html
-        fs.readFile(path.join(__dirname, 'script.js'), (err, data) => {
+    } else if (req.url === '/signup.js' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'signup.js'), (err, data) => {
             if (err) {
-                res.writeHead(500, {'Content-Type': 'application/javascript'});
-                res.end('// Error loading script.js');
-            } else {
-                res.writeHead(200, {'Content-Type': 'application/javascript'});
-                res.end(data);
+                res.writeHead(500, { 'Content-Type': 'application/javascript' });
+                return res.end('// Error loading signup.js');
             }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
         });
     } else if (req.url === '/signup' && req.method === 'POST') {
-        // Handle the form submission for signup
         let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
+        req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
-            if (!body) {
-                console.error("No data received");
-                res.writeHead(400, {'Content-Type': 'text/html'});
-                res.end('<h1>Bad Request: No data received</h1>');
-                return;
-            }
             try {
                 const userData = JSON.parse(body);
                 const result = await signUp(userData);
-
-                res.writeHead(200, {'Content-Type': 'application/json'});
-                res.end(JSON.stringify({message: 'User registered!', id: result.insertedId}));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'User registered!', id: result.insertedId }));
             } catch (error) {
-                console.error("Error parsing JSON: ", error);
-                res.writeHead(400, {'Content-Type': 'text/html'});
-                res.end('<h1>Bad Request</h1>');
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: error.message }));
+            }
+        });
+    }
+
+    // SERVE LOGIN PAGE
+    else if (req.url === '/login' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'login.html'), (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                return res.end('<h1>Server Error</h1>');
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+        });
+    } else if (req.url === '/login.js' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'login.js'), (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'application/javascript' });
+                return res.end('// Error loading login.js');
+            }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
+        });
+    } else if (req.url === '/login' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const credentials = JSON.parse(body);
+                const result = await userLogin(credentials);
+
+                if (result.token) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(result));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Invalid credentials' }));
+                }
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: error.message }));
             }
         });
     } else {
-        // Default response for any other request
-        res.writeHead(404, {'Content-Type': 'text/html'});
+        res.writeHead(404, { 'Content-Type': 'text/html' });
         res.end('<h1>404: Page Not Found</h1>');
     }
 
@@ -228,17 +259,6 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
         })
-    }
-
-    else if(req.url.startsWith('/login') && req.method == "POST"){
-
-        const queryObject = url.parse(req.url, true).query;
-        const result = await userLogin(queryObject);
-        if(!result){
-            throw new Error("Token generation failed");
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
     }
 
     else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET" || req.method === "DELETE")){

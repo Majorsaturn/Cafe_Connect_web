@@ -68,6 +68,33 @@ async function signUp(userData){
     return result;
 }
 
+async function userLogin(queryObject){
+    const collection = client.db("CC_1st").collection("Users");
+    const query = {
+        username: queryObject.username,
+        password: queryObject.password
+    };
+    const user = await collection.findOne({ username: query.username });
+    if(user){
+        const isPasswordMatch = await bcrypt.compare(query.password, user.password);
+        if (isPasswordMatch) {
+            const token = jwt.sign(
+                { userId: user._id, username: user.username },
+                secret,
+                { expiresIn: '12h' } // Token expires in 12 hours
+            );
+            console.log(jwt.verify(token, secret));
+            console.log(token);
+            return { token };
+        } else {
+            return { message: "Incorrect password" };
+        }
+    }
+    else{
+        return { message: "Username does not exist" };
+    }
+}
+
 // Function to search for users based on query parameters
 async function searchUsers(queryObject) {
     const collection = client.db("CC_1st").collection("Users");
@@ -145,34 +172,6 @@ async function changeUserStatus(queryObject, requestData) {
     // Perform the update
     const result = await collection.updateOne(updateCriteria, { $set: updateData });
     return result;
-}
-
-async function userLogin(queryObject){
-    const collection = client.db("CC_1st").collection("Users");
-    const query = {
-        username: queryObject.username,
-        password: queryObject.password
-    };
-    const user = await collection.findOne({ username: query.username });
-    if(user){
-        const isPasswordMatch = await bcrypt.compare(query.password, user.password);
-        if (isPasswordMatch) {
-            const token = jwt.sign(
-                { userId: user._id, username: user.username },
-                secret, // Replace with a secure key, ideally from an environment variable
-                { expiresIn: '12h' } // Token expires in 1 hour, adjust as needed
-            );
-            console.log(jwt.verify(token, secret));
-            console.log(token);
-            return { token }
-        } else {
-            res.status(400).json({error: "incorrect password"});
-        }
-    }
-    else{
-        return false;
-        res.status(400).json({error: "username does not match"});
-    }
 }
 
 async function addFriend(token, friendUser){
@@ -630,11 +629,11 @@ async function editSettings(token, settingsData){
 module.exports = {
     run,
     signUp,
+    userLogin,
     searchUsers,
     deleteUser,
     editUser,
     changeUserStatus,
-    userLogin,
     addFriend,
     listFriends,
     removeFriend,
