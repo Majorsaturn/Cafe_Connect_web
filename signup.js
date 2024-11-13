@@ -44,3 +44,8 @@ function displayMessage(message, color) {
     messageDiv.innerText = message;
     messageDiv.style.color = color;
 }
+
+// Clicking the Login button takes you to the Login page
+function goToLogin() {
+    window.location.href = "http://localhost:5000/login";
+}

@@ -41,3 +41,8 @@ function displayMessage(message, color) {
     messageDiv.innerText = message;
     messageDiv.style.color = color;
 }
+
+// Clicking the "Create an account" button takes you to the Signup page
+function goToSignup() {
+    window.location.href = "http://localhost:5000/signup";
+}

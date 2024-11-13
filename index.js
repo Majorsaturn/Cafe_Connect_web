@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 run();
-const staticDir = path.join(__dirname, 'public');
+const staticDir = path.join(__dirname, 'public'); // Public directory where styles.css is located
 
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
