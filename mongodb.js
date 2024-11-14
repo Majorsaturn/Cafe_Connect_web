@@ -339,25 +339,40 @@ async function listBlockedUsers(token) {
     }
 }
 
-async function makeTable(token, tableData){
-    try{
+async function makeTable(token, tableData) {
+    try {
         const Tables = client.db("CC_1st").collection("Tables");
+        const Users = client.db("CC_1st").collection("Users");
+
+        // Decode the token to get user details
         const decodedToken = jwt.verify(token, secret);
         const userId = new ObjectId(decodedToken.userId);
         const username = decodedToken.username;
 
+        // Set the members and createdby fields in the table data
         tableData.members = [username];
         tableData.createdby = userId;
 
-        const { ...all } = tableData;
+        // Insert the table into the Tables collection
+        const result = await Tables.insertOne({ ...tableData });
 
-        result = await Tables.insertOne({ ...all });
-        console.log("Insert result:", result);
+        // Now update the user's document to link the created table to the user
+        const userUpdate = await Users.updateOne(
+            { _id: userId },
+            { $set: { table: result.insertedId } }  // Set the created table's ID in the user's document
+        );
+
+        // Check if the user's document update was successful
+        if (userUpdate.modifiedCount === 0) {
+            return { success: false, message: 'Failed to update user document with created table.' };
+        }
+
+        // Return success and the result of table creation
         return result;
-    }
-    catch(error){
-        console.error("Error creating chatroom:", error);
-        return {success: false, error: "Failed to create chatroom."};
+
+    } catch (error) {
+        console.error("Error creating table:", error);
+        return { success: false, message: "Failed to create table." };
     }
 }
 
@@ -377,6 +392,68 @@ async function viewTable(queryObject) {
         return {success: false, error: "Failed to create chatroom."};
     }
 }
+
+async function joinTable(token, tableId) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+        const Users = client.db("CC_1st").collection("Users");
+
+        // Decode the token to get user details
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+        const username = decodedToken.username;
+
+        // Ensure the user exists in the Users collection
+        const user = await Users.findOne({ _id: userId });
+        if (!user) {
+            return { success: false, message: 'User not found' };
+        }
+
+        // Find the table by ID
+        const table = await Tables.findOne({ _id: new ObjectId(tableId) });
+        if (!table) {
+            return { success: false, message: 'Table not found' };
+        }
+
+        // Check if the user is already a member of the table
+        if (table.members.includes(username)) {
+            return { success: false, message: 'You are already a member of this table' };
+        }
+
+        // Check if the table has reached the max number of seats
+        if (table.members.length >= table.maxseats) {
+            return { success: false, message: 'Table is full' };
+        }
+
+        // Add the user to the table's members list
+        const result = await Tables.updateOne(
+            { _id: new ObjectId(tableId) },
+            { $push: { members: username } }  // Add username to members array
+        );
+
+        // Check if the table update was successful
+        if (result.modifiedCount === 0) {
+            return { success: false, message: 'Failed to join the table' };
+        }
+
+        // Update the user's document by adding the table's ID (single table) to the table field
+        const userUpdate = await Users.updateOne(
+            { _id: userId },
+            { $set: { table: new ObjectId(tableId) } }  // Store the single tableId
+        );
+
+        // Check if the user's document update was successful
+        if (userUpdate.modifiedCount === 0) {
+            return { success: false, message: 'Failed to update user document' };
+        }
+
+        return { success: true, message: 'Successfully joined the table' };
+    } catch (error) {
+        console.error("Error in joinTable function:", error);
+        return { success: false, message: 'Error processing request' };
+    }
+}
+
 
 async function deleteTable(queryObject) {
     const Tables = client.db("CC_1st").collection("Tables");

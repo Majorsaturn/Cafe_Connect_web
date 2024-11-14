@@ -31,14 +31,33 @@ function serveFile(res, filePath, contentType) {
     });
 }
 
+// Helper function to parse cookies from the request header
+function parseCookies(cookieHeader) {
+    return cookieHeader ? cookie.parse(cookieHeader) : {};
+}
+
+function verifyToken(req) {
+    // Parse cookies from the request headers
+    const cookies = parseCookies(req.headers.cookie);
+
+    // Check if the authToken cookie exists
+    const token = cookies.authToken;
+
+    if (!token) {
+        return null; // No token in cookies
+    }
+
+    try {
+        // Verify the token and return the decoded data
+        return token;
+    } catch (error) {
+        return null; // Invalid token
+    }
+}
+
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
-
-    // Helper function to parse cookies from the request header
-    function parseCookies(cookieHeader) {
-        return cookieHeader ? cookie.parse(cookieHeader) : {};
-    }
 
     if (req.url === '/') {
         // Redirect root URL to login page
@@ -111,7 +130,163 @@ var server = http.createServer(async function (req, res) {
         return;
     }
 
-    if (req.url.startsWith('/usersearch') && req.method == "GET") {
+    if (req.url.startsWith('/table')) {
+
+        // Join table route (POST request)
+        if (req.url.startsWith('/table/join') && req.method === "POST") {
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', async () => {
+                const tokenData = verifyToken(req);  // Verify token to authenticate user
+                if (!tokenData) {
+                    sendJSON(res, 401, { message: 'Unauthorized: Invalid token' });
+                    return;  // Prevent further execution
+                }
+
+                const { tableId } = JSON.parse(body);  // Extract the table ID from the request body
+
+                if (!tableId) {
+                    sendJSON(res, 400, { message: 'Bad Request: Table ID is required' });
+                    return;
+                }
+
+                try {
+                    // Attempt to join the table
+                    const result = await joinTable(tokenData, tableId);
+                    if (result.success) {
+                        sendJSON(res, 200, { message: 'Successfully joined the table' });
+                    } else {
+                        sendJSON(res, 400, { message: result.message });
+                    }
+                } catch (error) {
+                    console.error("Error joining table: ", error);
+                    sendJSON(res, 500, { message: 'Internal Server Error' });
+                }
+            });
+            return;  // Ensure no further code executes after response is sent
+        }
+
+
+        // Search table route
+        if (req.url.startsWith('/table/search') && req.method === "GET") {
+            const queryObject = parse(req.url, true).query;
+            try {
+                const table = await searchTable(queryObject);
+                sendJSON(res, 200, table);
+            } catch (error) {
+                console.error("Error retrieving table: ", error);
+                sendJSON(res, 500, { message: 'Internal Server Error' });
+            }
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        // Get table invite route
+        if (req.url.startsWith('/table/invite') && req.method === "GET") {
+            const queryObject = parse(req.url, true).query;
+            try {
+                const table = await getTableInvite(queryObject);
+                sendJSON(res, 200, table);
+            } catch (error) {
+                console.error("Error retrieving table invite: ", error);
+                sendJSON(res, 500, { message: 'Internal Server Error' });
+            }
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        // View table route
+        if (req.url === '/table' && req.method === "GET") {
+            const queryObject = parse(req.url, true).query;
+            try {
+                const table = await viewTable(queryObject);
+                sendJSON(res, 200, table);
+            } catch (error) {
+                console.error("Error retrieving table: ", error);
+                sendJSON(res, 500, { message: 'Internal Server Error' });
+            }
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        // Serve table creation page
+        if (req.url === '/table/create' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'table.html'), 'text/html');
+            return;  // Ensure no further code executes after response is sent
+        } else if (req.url === '/table/makeTable.js' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'makeTable.js'), 'application/javascript');
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        // Create table route (POST request)
+        if (req.url.startsWith('/table/create') && req.method === "POST") {
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', async () => {
+                const tokenData = verifyToken(req);
+                console.log(tokenData)
+                if (!tokenData) {
+                    sendJSON(res, 401, { message: 'Unauthorized: Invalid token' });
+                    return;  // Prevent further execution
+                }
+
+                try {
+                    const tableData = JSON.parse(body);
+                    const result = await makeTable(tokenData, tableData);
+                    if (result.acknowledged) {
+                        sendJSON(res, 200, { message: 'Table created!', id: result.insertedId });
+                    } else {
+                        sendJSON(res, 400, { message: 'Table creation failed.' });
+                    }
+                } catch (error) {
+                    console.error("Error creating table: ", error);
+                    sendJSON(res, 400, { message: 'Bad Request' });
+                }
+            });
+            return;  // Ensure no further code executes after response is sent
+        }
+
+
+
+        // Delete table route (DELETE request)
+        if (req.url.startsWith('/table/delete') && req.method === "DELETE") {
+            const queryObject = parse(req.url, true).query;
+            try {
+                const deleted = await deleteTable(queryObject);
+                sendJSON(res, 200, deleted);
+            } catch (error) {
+                console.error("Error deleting table: ", error);
+                sendJSON(res, 500, { message: 'Internal Server Error' });
+            }
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        // Update table settings route (PUT request)
+        if (req.url.startsWith('/table/settings') && req.method === "PUT") {
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', async () => {
+                const tokenData = verifyToken(req);
+                if (!tokenData) {
+                    sendJSON(res, 401, { message: 'Unauthorized: Invalid token' });
+                    return;  // Prevent further execution
+                }
+
+                try {
+                    const tableData = JSON.parse(body);
+                    const result = await editTable(tokenData, tableData);
+                    if (result.modifiedCount === 0) {
+                        sendJSON(res, 404, { message: 'Table not found or no changes made.' });
+                    } else {
+                        sendJSON(res, 200, { message: 'Table updated successfully.' });
+                    }
+                } catch (error) {
+                    console.error("Error updating table: ", error);
+                    sendJSON(res, 400, { message: 'Bad Request' });
+                }
+            });
+            return;  // Ensure no further code executes after response is sent
+        }
+    }
+
+    else if (req.url.startsWith('/usersearch') && req.method == "GET") {
         // Parse query parameters from the URL
         const queryObject = url.parse(req.url, true).query;
 
@@ -339,160 +514,6 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
         });
-
-    }
-
-    else if(req.url.startsWith('/table')){
-
-        if(req.method === "GET"){
-            if(req.url.startsWith('/table/search')){
-                const queryObject = url.parse(req.url, true).query;
-
-                try {
-                    // Call the searchTable function from mongodb.js with the query parameters
-                    const table = await searchTable(queryObject);
-
-                    // Send the retrieved users as JSON
-                    res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify(table));
-
-                } catch (error) {
-                    console.error("Error retrieving users: ", error);
-                    res.writeHead(500, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Internal Server Error'}));
-                }
-            }
-            else if(req.url.startsWith('/table/invite')){
-                const queryObject = url.parse(req.url, true).query;
-
-                try {
-                    // Call the gettableinvite function from mongodb.js with the query parameters
-                    const table = await getTableInvite(queryObject);
-
-                    // Send the retrieved table as JSON
-                    res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify(table));
-
-                } catch (error) {
-                    console.error("Error retrieving users: ", error);
-                    res.writeHead(500, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Internal Server Error'}));
-                }
-            }
-            else {
-                const queryObject = url.parse(req.url, true).query;
-
-                try {
-                    // Call the viewTable function from mongodb.js with the query parameters
-                    const table = await viewTable(queryObject);
-
-                    // Send the retrieved users as JSON
-                    res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify(table));
-
-                } catch (error) {
-                    console.error("Error retrieving users: ", error);
-                    res.writeHead(500, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Internal Server Error'}));
-                }
-            }
-        }
-        else if(req.url.startsWith('/table/create') && req.method === "POST") {
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', async () => {
-                if (!body) {
-                    console.error("No data received");
-                    res.writeHead(400, {'Content-Type': 'text/html'});
-                    res.end('<h1>Bad Request: No data received</h1>');
-                    return;
-                }
-                console.log("Received body: ", body);
-
-                const authHeader = req.headers['authorization'];
-
-                if (authHeader) {
-
-                }
-                const token = authHeader;
-                const tableData = JSON.parse(body); // Parse the incoming JSON data
-                console.log("Parsed data: ", tableData);
-                try {
-                    const result = await makeTable(token, tableData);
-                    if(result.acknowledged) {
-                        res.writeHead(200, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Table created!', id: result.insertedId}));
-                    }
-                    else{
-                        res.writeHead(401, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({message: 'Table creation failed.'}));
-                    }
-                } catch (error) {
-                    console.error("Error processing request: ", error);
-                    res.writeHead(400, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Bad Request'}));
-                }
-            })
-        }
-        else if(req.url.startsWith('/table/delete') && req.method === "DELETE"){
-            const queryObject = url.parse(req.url, true).query;
-
-            try {
-                const deleted = await deleteTable(queryObject);
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(deleted));
-
-            } catch (error) {
-                console.error("Error retrieving users: ", error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Internal Server Error' }));
-            }
-        }
-
-        else if(req.url.startsWith('/table/settings') && req.method === "PUT"){
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', async () => {
-                const authHeader = req.headers['authorization'];
-
-                if (authHeader) {
-                    const token = authHeader;
-                    try {
-                        const tableData = JSON.parse(body);
-
-                        // Call the updateUser function from mongodb.js
-                        const result = await editTable(token, tableData);
-
-                        // Handle the result of the update
-                        if (result.modifiedCount === 0) {
-                            res.writeHead(404, {'Content-Type': 'application/json'});
-                            res.end(JSON.stringify({message: 'Table not found or no changes made.'}));
-                        } else {
-                            res.writeHead(200, {'Content-Type': 'application/json'});
-                            res.end(JSON.stringify({message: 'Table details updated successfully.'}));
-                        }
-                    } catch (error) {
-                        console.error("Error parsing JSON: ", error);
-                        res.writeHead(400, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Bad Request'}));
-                    }
-                }
-                else {
-                    // If the Authorization header is missing
-                    res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
-                }
-            })
-        }
 
     }
 
