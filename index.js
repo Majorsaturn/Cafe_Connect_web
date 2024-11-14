@@ -1,16 +1,38 @@
 const http = require('http');
-const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
-const url = require('url');  // To parse query parameters from the URL
-const jwt = require('jsonwebtoken');
-const secret = 'jebus276'
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
+const cookie = require('cookie'); // If you want to keep using the cookie module for serializing cookies
+const url = require('url');  // To parse query parameters from the URL
+
+const secret = 'jebus276';
 
 run();
 const staticDir = path.join(__dirname, 'public'); // Public directory where styles.css is located
 
+
+
+function parseRequestBody(req, callback) {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+        try {
+            callback(null, JSON.parse(body));
+        } catch (error) {
+            callback(error, null);
+        }
+    });
+}
+
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
+
+
+    // Helper function to parse cookies from the request header
+    function parseCookies(cookieHeader) {
+        return cookieHeader ? cookie.parse(cookieHeader) : {};
+    }
 
     if (req.url === '/') {
         // Redirect root URL to login page
@@ -53,8 +75,8 @@ var server = http.createServer(async function (req, res) {
         });
     }
 
-    // SERVE LOGIN PAGE
-    else if (req.url === '/login' && req.method === 'GET') {
+    // Handle login page GET request
+    if (req.url === '/login' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'login.html'), (err, data) => {
             if (err) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
@@ -63,7 +85,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(data);
         });
-    } else if (req.url === '/login.js' && req.method === 'GET') {
+    }
+
+    // Handle login JavaScript file request
+    else if (req.url === '/login.js' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'login.js'), (err, data) => {
             if (err) {
                 res.writeHead(500, { 'Content-Type': 'application/javascript' });
@@ -72,7 +97,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'application/javascript' });
             res.end(data);
         });
-    } else if (req.url === '/login' && req.method === 'POST') {
+    }
+
+    // Handle login POST request
+    else if (req.url === '/login' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
@@ -81,6 +109,17 @@ var server = http.createServer(async function (req, res) {
                 const result = await userLogin(credentials);
 
                 if (result.token) {
+                    // Set the cookie with the JWT token
+                    const token = result.token;
+                    const cookieHeader = cookie.serialize('authToken', token, {
+                        httpOnly: true,  // Prevent JavaScript access to the cookie
+                        secure: process.env.NODE_ENV === 'production',  // Use `secure` flag for HTTPS in production
+                        maxAge: 12 * 60 * 60,  // 12 hours
+                        path: '/',  // Cookie is available for the entire domain
+                    });
+
+                    res.setHeader('Set-Cookie', cookieHeader);  // Set the cookie header
+
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(result));
                 } else {
@@ -92,18 +131,17 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ message: error.message }));
             }
         });
-    } else {
-        // Construct the file path based on the request URL
-        const filePath = path.join(staticDir, req.url);
+    }
 
-        // Serve the file if it exists in the static directory
+    // Serve other static files (CSS, JS, etc.)
+    else {
+        const filePath = path.join(staticDir, req.url);
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 res.writeHead(404, { 'Content-Type': 'text/html' });
                 return res.end('<h1>404 - Not Found</h1>');
             }
 
-            // Determine the Content-Type based on file extension
             const ext = path.extname(filePath);
             let contentType = 'text/plain';
             if (ext === '.css') contentType = 'text/css';
@@ -114,7 +152,6 @@ var server = http.createServer(async function (req, res) {
             res.end(data);
         });
     }
-
 
     if (req.url.startsWith('/usersearch') && req.method == "GET") {
         // Parse query parameters from the URL
@@ -353,7 +390,7 @@ var server = http.createServer(async function (req, res) {
                 const queryObject = url.parse(req.url, true).query;
 
                 try {
-                    // Call the searchUsers function from mongodb.js with the query parameters
+                    // Call the searchTable function from mongodb.js with the query parameters
                     const table = await searchTable(queryObject);
 
                     // Send the retrieved users as JSON
@@ -370,10 +407,10 @@ var server = http.createServer(async function (req, res) {
                 const queryObject = url.parse(req.url, true).query;
 
                 try {
-                    // Call the searchUsers function from mongodb.js with the query parameters
+                    // Call the gettableinvite function from mongodb.js with the query parameters
                     const table = await getTableInvite(queryObject);
 
-                    // Send the retrieved users as JSON
+                    // Send the retrieved table as JSON
                     res.writeHead(200, {'Content-Type': 'application/json'});
                     res.end(JSON.stringify(table));
 
@@ -387,7 +424,7 @@ var server = http.createServer(async function (req, res) {
                 const queryObject = url.parse(req.url, true).query;
 
                 try {
-                    // Call the searchUsers function from mongodb.js with the query parameters
+                    // Call the viewTable function from mongodb.js with the query parameters
                     const table = await viewTable(queryObject);
 
                     // Send the retrieved users as JSON
