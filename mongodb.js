@@ -349,6 +349,11 @@ async function makeTable(token, tableData) {
         const userId = new ObjectId(decodedToken.userId);
         const username = decodedToken.username;
 
+        const existingUser = await Users.findOne({ _id: userId });
+        if (existingUser && existingUser.table) {
+            return { success: false, message: 'User is already assigned to a table.' };
+        }
+
         // Set the members and createdby fields in the table data
         tableData.members = [username];
         tableData.createdby = userId;
@@ -728,4 +733,5 @@ module.exports = {
     searchTable,
     getTableInvite,
     editSettings,
+    joinTable,
 }

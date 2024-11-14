@@ -2,7 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const { run, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
+const { parse } = require('url');
+const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
 const cookie = require('cookie'); // If you want to keep using the cookie module for serializing cookies
 const url = require('url');  // To parse query parameters from the URL
 
@@ -167,17 +168,37 @@ var server = http.createServer(async function (req, res) {
         }
 
 
+        // Serve table creation page
+        if (req.url === '/table/search?' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'searchTable.html'), 'text/html');
+            return;  // Ensure no further code executes after response is sent
+        } else if (req.url === '/table/searchTable.js' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'searchTable.js'), 'application/javascript');
+            return;  // Ensure no further code executes after response is sent
+        }
+
         // Search table route
         if (req.url.startsWith('/table/search') && req.method === "GET") {
+            // Parse query parameters
             const queryObject = parse(req.url, true).query;
+
+            // If no query parameters are provided, return a bad request response
+            if (Object.keys(queryObject).length === 0) {
+                sendJSON(res, 400, { message: 'No search parameters provided' });
+                return;
+            }
+
             try {
+                // Call the searchTable function with the queryObject
                 const table = await searchTable(queryObject);
+
+                // Send back the search results
                 sendJSON(res, 200, table);
             } catch (error) {
                 console.error("Error retrieving table: ", error);
                 sendJSON(res, 500, { message: 'Internal Server Error' });
             }
-            return;  // Ensure no further code executes after response is sent
+            return;  // Ensure no further code executes after the response is sent
         }
 
         // Get table invite route
@@ -213,6 +234,10 @@ var server = http.createServer(async function (req, res) {
         } else if (req.url === '/table/makeTable.js' && req.method === 'GET') {
             serveFile(res, path.join(__dirname, 'makeTable.js'), 'application/javascript');
             return;  // Ensure no further code executes after response is sent
+        }
+        else if (req.url === '/table/styles.css' && req.method === 'GET') {
+            serveFile(res, path.join(staticDir, 'styles.css'), 'text/css');
+            return;
         }
 
         // Create table route (POST request)
@@ -284,6 +309,7 @@ var server = http.createServer(async function (req, res) {
             });
             return;  // Ensure no further code executes after response is sent
         }
+
     }
 
     else if (req.url.startsWith('/usersearch') && req.method == "GET") {
