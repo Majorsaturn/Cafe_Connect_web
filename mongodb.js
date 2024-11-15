@@ -354,6 +354,12 @@ async function makeTable(token, tableData) {
             return { success: false, message: 'User is already assigned to a table.' };
         }
 
+        // Check if a table with the same name already exists
+        const existingTable = await Tables.findOne({ tablename: tableData.tablename });
+        if (existingTable) {
+            return { success: false, message: 'A table with this name already exists.' };
+        }
+
         // Set the members and createdby fields in the table data
         tableData.members = [username];
         tableData.createdby = userId;
@@ -373,7 +379,7 @@ async function makeTable(token, tableData) {
         }
 
         // Return success and the result of table creation
-        return result;
+        return { success: true, message: 'Table created successfully', tableId: result.insertedId };
 
     } catch (error) {
         console.error("Error creating table:", error);
@@ -460,19 +466,52 @@ async function joinTable(token, tableId) {
 }
 
 
-async function deleteTable(queryObject) {
-    const Tables = client.db("CC_1st").collection("Tables");
-    const query = {
-        _id: new ObjectId(queryObject.id)
-    };
+async function deleteTable(token, tableId) {
+    try {
+        const Tables = client.db("CC_1st").collection("Tables");
+        const Users = client.db("CC_1st").collection("Users");
 
-    // Delete the user that matches the query
-    const deleted = await Tables.deleteOne(query);
-    if (deleted.deletedCount > 0) {
-        console.log(`Deleted user with ID: ${query._id}`); // Log the deleted user's ID
+        // Decode the token to get user details
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+
+        // Find the table by ID to check ownership
+        const table = await Tables.findOne({ _id: new ObjectId(tableId) });
+        if (!table) {
+            return { success: false, message: 'Table not found' };
+        }
+
+        // Check if the current user is the owner of the table
+        if (!table.createdby.equals(userId)) {
+            return { success: false, message: 'You are not the owner of this table' };
+        }
+
+        // Proceed to delete the table
+        const deleteResult = await Tables.deleteOne({ _id: new ObjectId(tableId) });
+        if (deleteResult.deletedCount === 0) {
+            console.log("fail");
+            return { success: false, message: 'Failed to delete table' };
+        }
+
+        // Optionally, update the user’s table field (if needed)
+        const userUpdate = await Users.updateOne(
+            { _id: userId },
+            { $unset: { table: "" } }  // Unset the table reference from the user document
+        );
+
+        // Check if the user update was successful
+        if (userUpdate.modifiedCount === 0) {
+            return { success: false, message: 'Failed to update user document' };
+        }
+
+        return { success: true, message: 'Table successfully deleted' };
+
+    } catch (error) {
+        console.error("Error in deleteTable function:", error);
+        return { success: false, message: 'Error processing request' };
     }
-    return deleted;
 }
+
 
 async function getSubscriptionDetails() {
     try {

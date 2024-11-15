@@ -272,16 +272,33 @@ var server = http.createServer(async function (req, res) {
 
         // Delete table route (DELETE request)
         if (req.url.startsWith('/table/delete') && req.method === "DELETE") {
-            const queryObject = parse(req.url, true).query;
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', async () => {
+                const tokenData = verifyToken(req);  // Verify token to authenticate user
+                if (!tokenData) {
+                    sendJSON(res, 401, { message: 'Unauthorized: Invalid token' });
+                    return;  // Prevent further execution
+                }
+
+                const { tableId } = JSON.parse(body);  // Extract the table ID from the request body
+
+                if (!tableId) {
+                    sendJSON(res, 400, { message: 'Bad Request: Table ID is required' });
+                    return;
+                }
+
             try {
-                const deleted = await deleteTable(queryObject);
+                const deleted = await deleteTable(tokenData, tableId);
                 sendJSON(res, 200, deleted);
             } catch (error) {
                 console.error("Error deleting table: ", error);
                 sendJSON(res, 500, { message: 'Internal Server Error' });
             }
-            return;  // Ensure no further code executes after response is sent
+            });
+                return; // Ensure no further code executes after response is sent
         }
+
 
         // Update table settings route (PUT request)
         if (req.url.startsWith('/table/settings') && req.method === "PUT") {
