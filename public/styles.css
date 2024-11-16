@@ -74,6 +74,14 @@ input[type="text"], input[type="email"], input[type="password"] {
     margin-bottom: 1px;
 }
 
+.make-table-form {
+    width: 300px;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #FACE8B;
+}
+
 /* Top Navigation */
 .top-nav {
     position: fixed;

@@ -3,27 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
-    <link rel="stylesheet" href="./public/styles.css">
+    <title>Table Create Page</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <h1>CAFÉ CONNECT</h1>
-<div class="login-form">
-    <h2>Login</h2>
-    <form id="loginForm">
+<div class="make-table-form">
+    <h2>Table Creation</h2>
+    <form id="makeTableForm">
         <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" required>
+            <label for="tablename">Table Name</label>
+            <input type="text" id="tablename" required>
         </div>
         <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" required>
+            <label for="maxseats">Max Seats</label>
+            <input type="number" id="maxseats" required>
         </div>
-        <button type="button" onclick="submitLogin(event)">Log In</button>
+        <div class="form-group">
+            <label for="pub_priv">Public or Private</label>
+            <select name="pub_priv" id="pub_priv" required>
+                <option value=False>Public</option>
+                <option value=True>Private</option>
+            </select>
+        </div>
+        <button type="button" onclick="submitCreatTable(event)">Create Table</button>
+        <h5 class="account-text">Changed your mind?</h5>
+        <button type="button" onclick="goToHome()">Back to Home</button>
     </form>
     <div class="message" id="message"></div>
 </div>
 
-<script src="login.js"></script>
+<script src="makeTable.js"></script>
 </body>
 </html>
