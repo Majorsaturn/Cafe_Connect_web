@@ -59,7 +59,6 @@ function verifyToken(req) {
 // Create the HTTP server
 var server = http.createServer(async function (req, res) {
 
-
     if (req.url === '/') {
         // Redirect root URL to login page
         res.writeHead(302, { 'Location': '/login' });
@@ -127,6 +126,31 @@ var server = http.createServer(async function (req, res) {
             } catch (error) {
                 sendJSON(res, 500, { message: error.message });
             }
+        });
+        return;
+    }
+
+    // SERVE HOME PAGE
+    if (req.url === '/home' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'home.html'), (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                return res.end('<h1>Server Error</h1>');
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+        });
+        return;
+    }
+
+    if (req.url === '/home.js' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'home.js'), (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'application/javascript' });
+                return res.end('// Error loading home.js');
+            }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
         });
         return;
     }

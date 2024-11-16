@@ -43,3 +43,8 @@ document.addEventListener('click', function(event) {
         dropdown.style.display = "none";  // Close dropdown if clicking outside
     }
 });
+
+// Clicking the Cafe Connect logo takes you to the Home page
+function goToHome() {
+    window.location.href = "http://localhost:5000/home";
+}
