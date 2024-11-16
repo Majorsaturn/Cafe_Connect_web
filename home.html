@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café Connect - Home</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://kit.fontawesome.com/33097ec53d.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+    <div class="logo">CAFÉ CONNECT</div>
+    <div class="nav-links">
+        <button onclick="navigateToHome()">Home</button>
+        <button onclick="navigateToAudio()">Audio</button>
+        <button onclick="navigateToFriends()">Friends</button>
+        <!-- Profile dropdown container -->
+        <div class="profile-dropdown" id=":profileDropdown" onClick="toggleDropdown(event)">
+            <img src="default_pfp.png" alt="Profile Picture" class="profile-img" />
+            <span class="dropdown-arrow">▼</span>
+            <div class="dropdown-content">
+                <a href="profile.html">Profile</a>
+                <a href="settings.html">Settings</a>
+                <a href="logout.html">Logout</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Sidebar for additional navigation or options -->
+    <aside class="sidebar">
+        <h3>Featured Tables</h3>
+        <button onclick="joinTable('chilling')">Chilling/Studying</button>
+        <button onclick="joinTable('brainstorming')">Game Brainstorming</button>
+        <button onclick="joinTable('bored')">Join if Bored</button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content">
+        <!-- Ad Space -->
+        <div class="ad-space">
+            <div class="ad">Ad Space</div>
+            <div class="ad">Ad Space</div>
+        </div>
+
+        <!-- Audio Controls -->
+        <div class="audio-controls">
+            <p id="song-title">Café Calm</p>
+            <div class="media-buttons">
+                <button><i class="fas fa-backward"></i></button>
+                <button><i class="fas fa-play"></i></button>
+                <button><i class="fas fa-forward"></i></button>
+            </div>
+            <span id="current-time">0:00</span>
+        </div>
+
+        <!-- Table Buttons -->
+        <div class="action-buttons">
+            <button>Search for a Table</button>
+            <button>Create a Table</button>
+        </div>
+
+        <!-- Featured Tables Grid -->
+        <section class="tables-grid">
+            <div class="table" id="public-table">
+                <p class="table-name">Chilling/Studying</p>
+                <p class="table-type">Public</p>
+                <button onclick="joinTable('chilling')">Join</button>
+            </div>
+            <div class="table" id="private-table">
+                <p class="table-name">Game Brainstorming</p>
+                <p class="table-type">Private</p>
+                <button onclick="joinTable('brainstorming')">Join</button>
+            </div>
+            <div class="table" id="public-table2">
+                <p class="table-name">Join if Bored</p>
+                <p class="table-type">Public</p>
+                <button onclick="joinTable('bored')">Join</button>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="home.js"></script>
+</body>
+</html>

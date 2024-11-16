@@ -34,8 +34,8 @@ var server = http.createServer(async function (req, res) {
         return cookieHeader ? cookie.parse(cookieHeader) : {};
     }
 
+    // Redirect root URL to login page
     if (req.url === '/') {
-        // Redirect root URL to login page
         res.writeHead(302, { 'Location': '/login' });
         return res.end();
     }
@@ -50,7 +50,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(data);
         });
-    } else if (req.url === '/signup.js' && req.method === 'GET') {
+        return;
+    }
+
+    if (req.url === '/signup.js' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'signup.js'), (err, data) => {
             if (err) {
                 res.writeHead(500, {'Content-Type': 'application/javascript'});
@@ -59,7 +62,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, {'Content-Type': 'application/javascript'});
             res.end(data);
         });
-    } else if (req.url === '/signup' && req.method === 'POST') {
+        return;
+    }
+
+    if (req.url === '/signup' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
@@ -73,9 +79,9 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ message: error.message }));
             }
         });
+        return;
     }
 
-    // Handle login page GET request
     if (req.url === '/login' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'login.html'), (err, data) => {
             if (err) {
@@ -85,10 +91,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(data);
         });
+        return;
     }
 
-    // Handle login JavaScript file request
-    else if (req.url === '/login.js' && req.method === 'GET') {
+    if (req.url === '/login.js' && req.method === 'GET') {
         fs.readFile(path.join(__dirname, 'login.js'), (err, data) => {
             if (err) {
                 res.writeHead(500, { 'Content-Type': 'application/javascript' });
@@ -97,10 +103,10 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'application/javascript' });
             res.end(data);
         });
+        return;
     }
 
-    // Handle login POST request
-    else if (req.url === '/login' && req.method === 'POST') {
+    if (req.url === '/login' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
@@ -109,17 +115,15 @@ var server = http.createServer(async function (req, res) {
                 const result = await userLogin(credentials);
 
                 if (result.token) {
-                    // Set the cookie with the JWT token
                     const token = result.token;
                     const cookieHeader = cookie.serialize('authToken', token, {
-                        httpOnly: true,  // Prevent JavaScript access to the cookie
-                        secure: process.env.NODE_ENV === 'production',  // Use `secure` flag for HTTPS in production
-                        maxAge: 12 * 60 * 60,  // 12 hours
-                        path: '/',  // Cookie is available for the entire domain
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        maxAge: 12 * 60 * 60,
+                        path: '/',
                     });
 
-                    res.setHeader('Set-Cookie', cookieHeader);  // Set the cookie header
-
+                    res.setHeader('Set-Cookie', cookieHeader);
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(result));
                 } else {
@@ -131,27 +135,50 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ message: error.message }));
             }
         });
+        return;
     }
 
-    // Serve other static files (CSS, JS, etc.)
-    else {
-        const filePath = path.join(staticDir, req.url);
-        fs.readFile(filePath, (err, data) => {
+    // SERVE HOME PAGE
+    if (req.url === '/home' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'home.html'), (err, data) => {
             if (err) {
-                res.writeHead(404, { 'Content-Type': 'text/html' });
-                return res.end('<h1>404 - Not Found</h1>');
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                return res.end('<h1>Server Error</h1>');
             }
-
-            const ext = path.extname(filePath);
-            let contentType = 'text/plain';
-            if (ext === '.css') contentType = 'text/css';
-            else if (ext === '.js') contentType = 'application/javascript';
-            else if (ext === '.html') contentType = 'text/html';
-
-            res.writeHead(200, { 'Content-Type': contentType });
+            res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(data);
         });
+        return;
     }
+
+    if (req.url === '/home.js' && req.method === 'GET') {
+        fs.readFile(path.join(__dirname, 'home.js'), (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'application/javascript' });
+                return res.end('// Error loading home.js');
+            }
+            res.writeHead(200, { 'Content-Type': 'application/javascript' });
+            res.end(data);
+        });
+        return;
+    }
+
+    const filePath = path.join(staticDir, req.url);
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            res.writeHead(404, { 'Content-Type': 'text/html' });
+            return res.end('<h1>404 - Not Found</h1>');
+        }
+
+        const ext = path.extname(filePath);
+        let contentType = 'text/plain';
+        if (ext === '.css') contentType = 'text/css';
+        else if (ext === '.js') contentType = 'application/javascript';
+        else if (ext === '.html') contentType = 'text/html';
+
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(data);
+    });
 
     if (req.url.startsWith('/usersearch') && req.method == "GET") {
         // Parse query parameters from the URL

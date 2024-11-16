@@ -5,37 +5,39 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    height: 100%;
+    width: 100%;
     margin: 0;
+    background-color: #F7F7F7;
+    overflow-y: hidden;
 }
 h1 {
-    font-family: "Josefin Slab";
+    font-family: "Josefin Slab", sans-serif;
     text-align: center;
 }
 .login-form {
     width: 300px;
-    padding: 2rem;
+    padding: 32px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     background-color: #FACE8B;
 }
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 16px;
 }
 label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
 }
 input[type="text"], input[type="password"] {
     width: 100%;
-    padding: 0.5rem;
+    padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 button {
     width: 100%;
-    padding: 0.7rem;
+    padding: 12px;
     background-color: #9C6F44;
     color: #FFFFFF;
     border: none;
@@ -46,7 +48,7 @@ button:hover {
     background-color: #4B2909;
 }
 .message {
-    margin-top: 1rem;
+    margin-top: 16px;
     color: red;
     text-align: center;
 }
@@ -54,20 +56,262 @@ button:hover {
 /* Signup Page */
 .signup-form {
     width: 300px;
-    padding: 2rem;
+    padding: 32px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     background-color: #FACE8B;
 }
 input[type="text"], input[type="email"], input[type="password"] {
     width: 100%;
-    padding: 0.5rem;
+    padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 .account-text {
-    font-family: "Josefin Slab";
+    font-family: "Josefin Slab", sans-serif;
     font-size: 14px;
     text-align: center;
     margin-bottom: 1px;
+}
+
+/* Top Navigation */
+.top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 10px 0;
+    background-color: #FACE8B;
+}
+
+.logo {
+    font-family: "Josefin Slab", serif ;
+    font-size: 28px;
+    font-weight: bold;
+    padding-right: 120px;
+    padding-left: 10px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding-right: 10px;
+}
+
+.nav-links button {
+    background: none;
+    border: none;
+    color: #4B2909;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.nav-links button:hover {
+    color: #9C6F44;
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.profile-img {
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+}
+
+.dropdown-arrow {
+    margin-left: 5px;
+    font-size: 14px;
+    color: #4B2909;
+}
+
+.dropdown-content {
+    display: none; /* Initially hide the dropdown until pfp is clicked */
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: #9C6F44;
+    min-width: 120px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.dropdown-content a {
+    color: #ffffff;
+    padding: 8px 16px;
+    display: block;
+    text-decoration: none;
+}
+
+.dropdown-content a:hover {
+    background-color: #4B2909;
+}
+
+/* Layout */
+.main-container {
+    display: flex;
+    margin-top: 60px;
+    height: 100vh;
+}
+
+.sidebar {
+    flex: 0 0 220px;
+    padding: 20px;
+    background-color: #9C6F44;
+    color: #ffffff;
+}
+
+.sidebar h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.sidebar button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    background-color: #4B2909;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+}
+
+/* Content Area */
+.content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Ad Space */
+.ad-space {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.ad {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000000;
+    color: #ffffff;
+    width: 50%;
+    height: 100px;
+    padding: 20px;
+    text-align: center;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+/* Audio Controls */
+.audio-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #9C6F44;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #ffffff;
+    height: 120px;
+}
+
+#song-title {
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.media-buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+}
+
+.audio-controls button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #000000;
+    cursor: pointer;
+}
+
+.audio-controls button:hover {
+    color: #4B2909;
+}
+
+#current-time {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* Tables Grid */
+.tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+.table {
+    background-color: #FACE8B;
+    height: 160px;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.table button {
+    margin-top: 30px;
+}
+
+.table-name {
+    font-weight: bold;
+}
+
+.table-type {
+    margin-bottom: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 20px 0 20px 0;
+}
+
+.action-buttons button {
+    background-color: #9C6F44;
+    color: #ffffff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.action-buttons button:hover {
+    background-color: #4B2909;
 }
