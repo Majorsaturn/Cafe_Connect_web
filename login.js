@@ -34,6 +34,8 @@ async function submitLogin(event) {
         console.error('Fetch Error:', error);
         displayMessage('Error: ' + error.message, 'red');
     }
+
+    window.location.href = "http://localhost:5000/home";
 }
 
 function displayMessage(message, color) {

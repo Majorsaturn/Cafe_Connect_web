@@ -48,3 +48,13 @@ document.addEventListener('click', function(event) {
 function goToHome() {
     window.location.href = "http://localhost:5000/home";
 }
+
+// Function to redirect to the login page on logout
+function logout() {
+    window.location.href = "http://localhost:5000/login";
+}
+
+// Function to navigate to the Create a Table page
+function goToCreateTable() {
+    window.location.href = "http://localhost:5000/table/create";
+}
