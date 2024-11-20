@@ -58,3 +58,8 @@ function logout() {
 function goToCreateTable() {
     window.location.href = "http://localhost:5000/table/create";
 }
+
+// Function to navigate to the Search Table page
+function goToSearchTable() {
+    window.location.href = "http://localhost:5000/table/search?";
+}
