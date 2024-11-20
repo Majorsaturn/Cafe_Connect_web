@@ -1,5 +1,6 @@
 // MongoDB connection URI
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const fs = require('fs');
+const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const secret = 'jebus276'
@@ -747,6 +748,43 @@ async function editSettings(token, settingsData){
     return result
 }
 
+async function uploadAudio(filePath, fileName) {
+    const db = client.db("CC_1st");
+    const bucket = new GridFSBucket(db, { bucketName: "audio" });
+
+    return new Promise((resolve, reject) => {
+        const uploadStream = bucket.openUploadStream(fileName);
+        const fileStream = fs.createReadStream(filePath);
+
+        fileStream.pipe(uploadStream)
+            .on("error", (error) => {
+                console.error("Upload error:", error);
+                reject(error);
+            })
+            .on("finish", () => {
+                console.log(`File ${fileName} uploaded successfully.`);
+                resolve({ success: true, fileId: uploadStream.id });
+            });
+    });
+}
+
+async function getAudio(fileName, res) {
+    const db = client.db("CC_1st");
+    const bucket = new GridFSBucket(db, { bucketName: "audio" });
+
+    return new Promise((resolve, reject) => {
+        const downloadStream = bucket.openDownloadStreamByName(fileName);
+
+        downloadStream.pipe(res)
+            .on("error", (error) => {
+                console.error("Download error:", error);
+                res.status(500).send("Error retrieving audio file.");
+                reject(error);
+            })
+    });
+}
+
+
 module.exports = {
     run,
     signUp,
@@ -773,4 +811,6 @@ module.exports = {
     getTableInvite,
     editSettings,
     joinTable,
+    uploadAudio,
+    getAudio,
 }

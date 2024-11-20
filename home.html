@@ -48,14 +48,20 @@
 
         <!-- Audio Controls -->
         <div class="audio-controls">
-            <p id="song-title">Café Calm</p>
+            <p id="audio-title">Café Calm</p>
             <div class="media-buttons">
-                <button><i class="fas fa-backward"></i></button>
-                <button><i class="fas fa-play"></i></button>
-                <button><i class="fas fa-forward"></i></button>
+                <button id="prev"><i class="fas fa-backward"></i></button>
+                <button id="play-pause"><i class="fas fa-play"></i></button>
+                <button id="next"><i class="fas fa-forward"></i></button>
             </div>
             <span id="current-time">0:00</span>
         </div>
+
+        <!-- Audio Player -->
+        <audio id="audio-player" preload="auto">
+            <source src="audios/CafeCalm.wav" type="audio/mpeg">
+        </audio>
+
 
         <!-- Table Buttons -->
         <div class="action-buttons">

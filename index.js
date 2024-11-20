@@ -3,13 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { parse } = require('url');
-const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings } = require('./mongodb');
-const cookie = require('cookie'); // If you want to keep using the cookie module for serializing cookies
+const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings, getAudio } = require('./mongodb');
+const cookie = require('cookie');
 const url = require('url');  // To parse query parameters from the URL
 
 const secret = 'jebus276';
 
 run();
+
 const staticDir = path.join(__dirname, 'public'); // Public directory where styles.css is located
 
 
@@ -152,6 +153,25 @@ var server = http.createServer(async function (req, res) {
             res.writeHead(200, { 'Content-Type': 'application/javascript' });
             res.end(data);
         });
+        return;
+    }
+
+    // SERVE AN AUDIO FILE
+    if (req.url.startsWith('/audios') && req.method === 'GET') {
+        const fileName = req.url.split('/audios/')[1]; // Extract file name from the URL
+
+        if (!fileName) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'File name is required.' }));
+            return;
+        }
+        try {
+            await getAudio(fileName, res); // Call the getAudio function to stream the audio file
+        } catch (error) {
+            console.error('Error streaming audio:', error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Error retrieving audio file.' }));
+        }
         return;
     }
 
@@ -787,8 +807,6 @@ var server = http.createServer(async function (req, res) {
         });
     }
 
-
-
     else if (req.url === "/subscription/cancel" && req.method === "POST") {
         let body = '';
 
@@ -825,6 +843,12 @@ var server = http.createServer(async function (req, res) {
                 res.end(JSON.stringify({ message: 'Internal Server Error' }));
             }
         });
+    }
+
+    if (req.url === '/favicon.ico') {
+        res.writeHead(204); // No Content
+        res.end();
+        return;
     }
 
     // Serve other static files (CSS, JS, etc.)

@@ -1,13 +1,64 @@
-document.getElementById('play-pause').addEventListener('click', function() {
-    // Logic to play or pause audio
+// Array to store audio files
+let audios = [
+    { title: 'Café Calm', file: '/audios/CafeCalm.wav' },
+    { title: 'Espresso Echoes', file: '/audios/EspressoEchoes.mp3' },
+    { title: 'Coffeehouse Chatter', file: '/audios/CoffeehouseChatter.wav' }
+];
+
+let currentAudioIndex = 0;  // Index of the audio that is currently being played
+
+// Get references to the audio player and buttons
+const audioPlayer = document.getElementById('audio-player');
+const playPauseButton = document.getElementById('play-pause');
+const nextButton = document.getElementById('next');
+const prevButton = document.getElementById('prev');
+const currentTimeDisplay = document.getElementById('current-time');
+const audioTitle = document.getElementById('audio-title');
+
+// Initialize the first audio
+function loadAudio(audioIndex) {
+    const audio = audios[audioIndex];
+    audioPlayer.src = audio.file;
+    audioTitle.textContent = audio.title;
+}
+
+// Load the first audio when the page loads
+loadAudio(currentAudioIndex);
+
+// Play/Pause Button
+playPauseButton.addEventListener('click', function() {
+    if (audioPlayer.paused) {
+        audioPlayer.play();  // Play the audio
+        playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';  // Change button icon to 'pause'
+    } else {
+        audioPlayer.pause();  // Pause the audio
+        playPauseButton.innerHTML = '<i class="fas fa-play"></i>';  // Change button icon to 'play'
+    }
 });
 
-document.getElementById('next').addEventListener('click', function() {
-    // Logic to skip to the next audio track
+// Update the current time display to match the audio time
+audioPlayer.addEventListener('timeupdate', function() {
+    const minutes = Math.floor(audioPlayer.currentTime / 60);
+    const seconds = Math.floor(audioPlayer.currentTime % 60);
+    currentTimeDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 });
 
-document.getElementById('prev').addEventListener('click', function() {
-    // Logic to go back to the previous audio track
+// Next Button - Logic to switch to the next track
+nextButton.addEventListener('click', function() {
+    // Increment the index and wrap around if necessary
+    currentAudioIndex = (currentAudioIndex + 1) % audios.length;
+    loadAudio(currentAudioIndex);
+    audioPlayer.play();
+    playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+});
+
+// Previous Button - Logic to switch to the previous track
+prevButton.addEventListener('click', function() {
+    // Decrement the index and wrap around if necessary
+    currentAudioIndex = (currentAudioIndex - 1 + audios.length) % audios.length;
+    loadAudio(currentAudioIndex);
+    audioPlayer.play();
+    playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';
 });
 
 function joinTable(tableName) {
