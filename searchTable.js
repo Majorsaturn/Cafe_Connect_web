@@ -43,21 +43,22 @@ function displaySearchResults(results) {
             const tableElement = document.createElement('div');
             tableElement.classList.add('table-item');
             tableElement.innerHTML = `
-                <h3>${table.tableName}</h3>
+                <h3>${table.tablename}</h3>
                 <p>Max Seats: ${table.maxseats}</p>
                 <p>Privacy: ${table.pub_priv}</p>
-                <p>Members: ${table.members}</p>
-                <button onclick="joinTable('${table._id}')">Join</button>
-                <button onclick="deleteTable('${table._id}')">Delete Table</button>
-                <button onclick="goToViewTable('${table._id}')">View Table</button>
-                `;
+                <p>Members: ${table.members.join(', ')}</p>
+                <button onclick="joinTable('${table._id}', event)">Join</button>
+                <button onclick="deleteTable('${table._id}', event)">Delete Table</button>
+                <button onclick="goToViewTable('${table._id}', event)">View Table</button>
+            `;
             resultsContainer.appendChild(tableElement);
         });
     }
 }
 
 // Function to navigate to the view table screen
-function goToViewTable(tableId) {
+function goToViewTable(tableId, event) {
+    event.preventDefault(); // Prevent page refresh
     window.location.href = `/table/view?id=${tableId}`;  // Redirect to the view table screen with the tableId as a query parameter
 }
 
@@ -69,7 +70,9 @@ function displayMessage(message, color) {
 }
 
 // Function to join a table
-async function joinTable(tableId) {
+async function joinTable(tableId, event) {
+    event.preventDefault(); // Prevent page refresh
+
     // Confirm with the user before attempting to join
     const confirmJoin = confirm('Are you sure you want to join this table?');
     if (!confirmJoin) return;  // If user cancels, do nothing
@@ -103,11 +106,14 @@ async function joinTable(tableId) {
 
 
 // Go to the home page (handle the "Back to Home" button)
-function goToHome() {
+function goToHome(event) {
+    event.preventDefault(); // Prevent page refresh
     window.location.href = "http://localhost:5000/home";
 }
 
-async function deleteTable(tableId) {
+async function deleteTable(tableId, event) {
+    event.preventDefault(); // Prevent page refresh
+
     // Confirm with the user before attempting to delete
     const confirmDelete = confirm('Are you sure you want to delete this table?');
     if (!confirmDelete) return;  // If user cancels, do nothing
@@ -120,7 +126,7 @@ async function deleteTable(tableId) {
         const response = await fetch('http://localhost:5000/table/delete', {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',  // Ensures the server knows we're sending JSON// Use the provided token in the Authorization header
+                'Content-Type': 'application/json',  // Ensures the server knows we're sending JSON
             },
             body: JSON.stringify(requestData)  // Send the JSON body with tableId
         });

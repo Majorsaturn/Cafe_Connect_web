@@ -212,6 +212,8 @@ var server = http.createServer(async function (req, res) {
         }
 
 
+
+
         // Serve table creation page
         if (req.url === '/table/search?' && req.method === 'GET') {
             serveFile(res, path.join(__dirname, 'searchTable.html'), 'text/html');
@@ -245,6 +247,48 @@ var server = http.createServer(async function (req, res) {
             return;  // Ensure no further code executes after the response is sent
         }
 
+        // Serve table creation page
+        if (req.url === '/table/viewTable.js' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'viewTable.js'), 'application/javascript');
+            return;  // Ensure no further code executes after response is sent
+        }
+        else if (req.url.startsWith('/table/view') && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'viewTable.html'), 'text/html');
+            return;  // Ensure no further code executes after response is sent
+        }
+        else if (req.url === '/table/styles.css' && req.method === 'GET') {
+            serveFile(res, path.join(staticDir, 'styles.css'), 'text/css');
+            return;
+        }
+
+
+        // View table route
+        if (req.url.startsWith('/table/view') && req.method === "POST" ) {
+            // Parse query parameters
+            const queryObject = parse(req.url, true).query;
+
+            // If no query parameters are provided, return a bad request response
+            if (Object.keys(queryObject).length === 0) {
+                sendJSON(res, 400, { message: 'No search parameters provided' });
+                return;
+            }
+
+            const tokenData = verifyToken(req);
+            console.log(tokenData)
+            if (!tokenData) {
+                sendJSON(res, 401, { message: 'Unauthorized: Invalid token' });
+                return;  // Prevent further execution
+            }
+            try {
+                const table = await viewTable(tokenData, queryObject);
+                sendJSON(res, 200, table);
+            } catch (error) {
+                console.error("Error retrieving table: ", error);
+                sendJSON(res, 500, { message: 'Internal Server Error' });
+            }
+            return;  // Ensure no further code executes after response is sent
+        }
+
         // Get table invite route
         if (req.url.startsWith('/table/invite') && req.method === "GET") {
             const queryObject = parse(req.url, true).query;
@@ -258,18 +302,7 @@ var server = http.createServer(async function (req, res) {
             return;  // Ensure no further code executes after response is sent
         }
 
-        // View table route
-        if (req.url === '/table' && req.method === "GET") {
-            const queryObject = parse(req.url, true).query;
-            try {
-                const table = await viewTable(queryObject);
-                sendJSON(res, 200, table);
-            } catch (error) {
-                console.error("Error retrieving table: ", error);
-                sendJSON(res, 500, { message: 'Internal Server Error' });
-            }
-            return;  // Ensure no further code executes after response is sent
-        }
+
 
         // Serve table creation page
         if (req.url === '/table/create' && req.method === 'GET') {
@@ -286,9 +319,9 @@ var server = http.createServer(async function (req, res) {
 
         // Create table route (POST request)
         if (req.url.startsWith('/table/create') && req.method === "POST") {
-            let body = '';
-            req.on('data', chunk => { body += chunk.toString(); });
-            req.on('end', async () => {
+                let body = '';
+                req.on('data', chunk => { body += chunk.toString(); });
+                req.on('end', async () => {
                 const tokenData = verifyToken(req);
                 console.log(tokenData)
                 if (!tokenData) {
@@ -299,11 +332,11 @@ var server = http.createServer(async function (req, res) {
                 try {
                     const tableData = JSON.parse(body);
                     const result = await makeTable(tokenData, tableData);
-                    if (result.acknowledged) {
+                    //if (result.acknowledged) {
                         sendJSON(res, 200, { message: 'Table created!', id: result.insertedId });
-                    } else {
-                        sendJSON(res, 400, { message: 'Table creation failed.' });
-                    }
+                    //} else {
+                        //sendJSON(res, 400, { message: 'Table creation failed.' });
+                    //}
                 } catch (error) {
                     console.error("Error creating table: ", error);
                     sendJSON(res, 400, { message: 'Bad Request' });

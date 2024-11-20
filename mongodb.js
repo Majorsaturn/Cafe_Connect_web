@@ -388,20 +388,34 @@ async function makeTable(token, tableData) {
     }
 }
 
-async function viewTable(queryObject) {
+async function viewTable(token, queryObject) {
     try {
         const Tables = client.db("CC_1st").collection("Tables");
+        const Users = client.db("CC_1st").collection("Users");
 
-        const query = {
-            _id: new ObjectId(queryObject.id)
-        };
+        // Decode the token to get user details
+        const decodedToken = jwt.verify(token, secret);
+        const userId = new ObjectId(decodedToken.userId);
+        const username = decodedToken.username;
 
-        const table = await Tables.findOne(query);
+        // Fetch the table using the provided queryObject (table ID)
+        const table = await Tables.findOne({ _id: new ObjectId(queryObject.id) });
+
+        if (!table) {
+            return { success: false, message: "Table not found." };
+        }
+
+        // Check if the user is a member of the table
+        if (!table.members.includes(username)) {
+            return { success: false, message: "You are not a member of this table." };
+        }
+
+        // Return the table details if the user is a member
         return table;
-    }
-    catch (error) {
-        console.error("Error finding chatroom:", error);
-        return {success: false, error: "Failed to create chatroom."};
+
+    } catch (error) {
+        console.error("Error finding table:", error);
+        return { success: false, message: "Failed to fetch table details." };
     }
 }
 
