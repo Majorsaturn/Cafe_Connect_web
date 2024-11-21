@@ -690,7 +690,7 @@ async function editTable(token, tableData) {
         return result;
     }
     catch (error) {
-        console.error("Error adding friend:", error);
+        console.error("Error updating table:", error);
         return {success: false, error: "Failed to edit table."};
     }
 }
@@ -724,8 +724,9 @@ async function getTableInvite(queryObject) {
         };
 
         const table = await Tables.findOne(query);
-        const tableInvite = table.invitelink;
-
+        console.log(table);
+        const tableInvite = table.link;
+        console.log(tableInvite);
         return tableInvite;
     }
     catch (error) {

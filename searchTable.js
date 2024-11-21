@@ -47,9 +47,15 @@ function displaySearchResults(results) {
                 <p>Max Seats: ${table.maxseats}</p>
                 <p>Privacy: ${table.pub_priv}</p>
                 <p>Members: ${table.members.join(', ')}</p>
+                <div class="padding">
                 <button onclick="joinTable('${table._id}', event)">Join</button>
+                </div>\
+                <div class="padding">
                 <button onclick="deleteTable('${table._id}', event)">Delete Table</button>
+                </div>
+                <div class="padding">
                 <button onclick="goToViewTable('${table._id}', event)">View Table</button>
+                </div>
             `;
             resultsContainer.appendChild(tableElement);
         });

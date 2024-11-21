@@ -7,18 +7,65 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<h1>CAFÉ CONNECT</h1>
+
+
+<!-- Table Details Section -->
 <div class="make-table-form">
+    <h1>CAFÉ CONNECT</h1>
     <h2>Table Details</h2>
     <div id="tableDetails" class="table-details"></div>
-        <!-- This is where the table details will be displayed dynamically -->
-
+    <!-- This is where the table details will be displayed dynamically -->
 
     <!-- Message to display success or error -->
     <div class="message" id="message"></div>
-    <button type="button" onclick="viewTable(event)">Display Information</button>
+
+    <!-- Button to view the table -->
+    <div class="padding">
+        <button type="button" onclick="viewTable(event)">Display Information</button>
+    </div>
+    <!-- Display the invite link -->
+    <div id="inviteLinkContainer" class="invite-link-container" style="display: none;">
+        <h3>Invite Link</h3>
+        <p id="inviteLink"></p>
+    </div>
+    <!-- Button to fetch table invite link -->
+    <div class="padding">
+        <button type="button" onclick="getTableInvite(event)">Get Table Invite</button>
+    </div>
+    <!-- Button to go to edit table section -->
+    <div class="padding">
+        <button type="button" onclick="toggleEditForm()">Edit Table</button>
+    </div>
     <!-- Button to go back to home -->
     <button type="button" onclick="goToHome()">Back to Home</button>
+</div>
+
+
+
+<!-- Edit Table Form Section (Initially Hidden) -->
+<div id="editTableForm" style="display: none;">
+    <h2>Edit Table</h2>
+
+    <!-- Table name input -->
+    <div class="padding">
+        <label for="tableName">Table Name:</label>
+        <input type="text" id="tableName" placeholder="Enter new table name">
+    </div>
+    <!-- Privacy dropdown -->
+    <div class="padding">
+        <label for="privacy">Privacy:</label>
+        <select id="privacy">
+            <option value=true>Public</option>
+            <option value=false>Private</option>
+        </select>
+    </div>
+    <!-- Buttons to save changes or cancel -->
+    <div class="padding">
+        <button type="button" onclick="editTable(event)">Save Changes</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="cancelEdit()">Cancel</button>
+    </div  >
 </div>
 
 <script src="viewTable.js"></script>
