@@ -119,19 +119,25 @@ async function searchUsers(queryObject) {
     return users;
 }
 
-async function deleteUser(queryObject) {
+async function deleteUser(token) {
     const Users = client.db("CC_1st").collection("Users");
     const Settings = client.db("CC_1st").collection("User_Settings");
+    const Tables = client.db("CC_1st").collection("Tables");
+    const decodedToken = jwt.verify(token, secret);
     const query = {
-        _id: new ObjectId(queryObject.id),
+        _id: new ObjectId(decodedToken.userId),
     };
     const querySettings = {
-        userId: new ObjectId(queryObject.id),
+        userId: new ObjectId(decodedToken.userId),
+    };
+    const queryTables = {
+        createdby: new ObjectId(decodedToken.userId),
     };
 
     // Delete the user that matches the query along with the settings
     const deleted = await Users.deleteOne(query);
     const deletedSettings = await Settings.deleteOne(querySettings);
+    const deletedTables = await Tables.deleteOne(queryTables);
     if (deleted.deletedCount > 0) {
         console.log(`Deleted user with ID: ${query._id} along with their settings`); // Log the deleted user's ID
     }
@@ -147,14 +153,14 @@ async function editUser(token, userData) {
     };
 
     // Prepare the update data (if provided)
-    if (userData.name) {
-        updateData.name = userData.name;
+    if (userData.firstname) {
+        updateData.firstName = userData.firstname;
+    }
+    if (userData.lastname) {
+        updateData.lastName = userData.lastname;
     }
     if (userData.email) {
         updateData.email = userData.email;
-    }
-    if (userData.username) {
-        updateData.username = userData.username;
     }
 
     console.log('Update Criteria:', updateCriteria);
@@ -760,7 +766,7 @@ async function editSettings(token, settingsData){
     console.log('Update Data:', updateData);
 
     const result = await Settings.updateOne(updateCriteria, { $set: updateData });
-    return result
+    return result;
 }
 
 async function uploadAudio(filePath, fileName) {

@@ -424,153 +424,188 @@ var server = http.createServer(async function (req, res) {
             res.end(JSON.stringify({ message: 'Internal Server Error' }));
         }
     }
+    if(req.url.startsWith("/settings")) {
+        if (req.url.startsWith("/settings/deleteuser") && req.method == 'DELETE') {
+            // Parse query parameters from the URL
+            const tokenData = verifyToken(req);
+            if (!tokenData) {
+                sendJSON(res, 401, {message: 'Unauthorized: Invalid token'});
+                return;  // Prevent further execution
+            }
 
-    else if(req.url.startsWith("/profile/settings/deleteuser") && req.method =='DELETE') {
-        // Parse query parameters from the URL
-        const queryObject = url.parse(req.url, true).query;
+            try {
+                // Find users that match the query
+                const deleted = await deleteUser(tokenData);
 
-        try {
-            // Find users that match the query
-            const deleted = await deleteUser(queryObject);
+                // Send the retrieved users as JSON
+                sendJSON(res, 200, {message: 'User Deleted!', id: deleted});
 
-            // Send the retrieved users as JSON
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(deleted));
+            } catch (error) {
+                console.error("Error retrieving users: ", error);
+                res.writeHead(500, {'Content-Type': 'application/json'});
+                res.end(JSON.stringify({message: 'Internal Server Error'}));
+            }
+        } else if (req.url.startsWith("/settings/edituser") && req.method === "PUT") {
+            let body = '';
 
-        } catch (error) {
-            console.error("Error retrieving users: ", error);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                // Parse query parameters from the URL
+                const tokenData = verifyToken(req);
+                if (!tokenData) {
+                    if(!res.headersSent) {
+                        sendJSON(res, 401, {message: 'Unauthorized: Invalid token'});
+                    }
+                    return;  // Prevent further execution
+                }
+                    try {
+                        const userData = JSON.parse(body);
+
+                        // Call the updateUser function from mongodb.js
+                        const result = await editUser(tokenData, userData);
+
+                        // Handle the result of the update
+                        if (result.modifiedCount === 0) {
+                            if (!res.headersSent) {
+                            res.writeHead(404, {'Content-Type': 'application/json'});
+                            res.end(JSON.stringify({message: 'User not found or no changes made.'}));
+                            }
+                        } else {
+                            if(!res.headersSent) {
+                                res.writeHead(200, {'Content-Type': 'application/json'});
+                                res.end(JSON.stringify({message: 'User details updated successfully.'}));
+                            }
+                        }
+                    } catch (error) {
+                        if(!res.headersSent) {
+                            console.error("Error parsing JSON: ", error);
+                            res.writeHead(400, {'Content-Type': 'application/json'});
+                            res.end(JSON.stringify({message: 'Bad Request'}));
+                            return;
+                        }
+                    }
+
+            });
+        } else if (req.url.startsWith("/profile/settings/userstatus") && req.method === "POST") {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+                try {
+                    const requestData = JSON.parse(body);  // Parse the request body
+                    const queryObject = url.parse(req.url, true).query;
+
+                    // Validate that the status is provided
+                    if (!requestData.status || !queryObject.username) {
+                        res.writeHead(400, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Please provide a username and a status.'}));
+                        return;
+                    }
+
+                    // Validate the status value
+                    const validStatuses = ["Online", "Do Not Disturb", "Offline"];
+                    if (!validStatuses.includes(requestData.status)) {
+                        res.writeHead(400, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'Invalid status value. Must be Online, Do Not Disturb, or Offline.'}));
+                        return;
+                    }
+
+                    // Call the updateUserStatus function from mongodb.js
+                    const result = await changeUserStatus(queryObject, requestData);
+
+                    // Check if a document was updated
+                    if (result.modifiedCount === 0) {
+                        res.writeHead(404, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'User not found or status not changed.'}));
+                    } else {
+                        res.writeHead(200, {'Content-Type': 'application/json'});
+                        res.end(JSON.stringify({message: 'User status updated successfully.'}));
+                    }
+                } catch (error) {
+                    console.error("Error processing request: ", error);
+                    res.writeHead(400, {'Content-Type': 'application/json'});
+                    res.end(JSON.stringify({message: 'Bad Request'}));
+                }
+            });
+        }
+
+        // Serve table creation page
+        if (req.url === '/settings.js' && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'settings.js'), 'application/javascript');
+            return;  // Ensure no further code executes after response is sent
+        } else if (req.url.startsWith('/settings') && req.method === 'GET') {
+            serveFile(res, path.join(__dirname, 'settings.html'), 'text/html');
+            return;  // Ensure no further code executes after response is sent
+        }
+
+        if (req.url === '/settings/edit' && req.method === "PUT") {
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();  // Accumulate chunks of data
+            });
+
+            req.on('end', async () => {
+                // Verify token first
+                const tokenData = verifyToken(req);
+                console.log('Token Data:', tokenData);
+
+                // If token validation fails, send an error response and stop further execution
+                if (!tokenData) {
+                    if (!res.headersSent) {
+                        res.writeHead(401, {'Content-Type': 'application/json'});
+                        return res.end(JSON.stringify({
+                            success: false,
+                            error: "Authorization token is missing or invalid"
+                        }));
+                    }
+                }
+
+                // Try parsing the JSON body
+                let settingsData;
+                try {
+                    settingsData = JSON.parse(body);
+                } catch (error) {
+                    console.error("Error parsing JSON: ", error);
+                    if (!res.headersSent) {
+                        res.writeHead(400, {'Content-Type': 'application/json'});
+                        return res.end(JSON.stringify({message: 'Bad Request: Invalid JSON format'}));
+                    }
+                }
+
+                // Attempt to update user settings
+                try {
+                    const result = await editSettings(tokenData, settingsData);
+
+                    // If no changes are made or the settings are not found, return a 404 response
+                    if (result.modifiedCount === 0) {
+                        if (!res.headersSent) {
+                            res.writeHead(404, {'Content-Type': 'application/json'});
+                            return res.end(JSON.stringify({message: 'Settings not found or no changes made.'}));
+                        }
+                    } else {
+                        // Return success response if update is successful
+                        if (!res.headersSent) {
+                            res.writeHead(200, {'Content-Type': 'application/json'});
+                            return res.end(JSON.stringify({message: 'Settings details updated successfully.'}));
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error updating settings:", error);
+                    if (!res.headersSent) {
+                        res.writeHead(500, {'Content-Type': 'application/json'});
+                        return res.end(JSON.stringify({message: 'Internal Server Error', error: error.message}));
+                    }
+                }
+            });
         }
     }
-
-    else if (req.url.startsWith("/profile/settings/edituser") && req.method === "PUT") {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-                try {
-                    const userData = JSON.parse(body);
-
-                    // Call the updateUser function from mongodb.js
-                    const result = await editUser(token, userData);
-
-                    // Handle the result of the update
-                    if (result.modifiedCount === 0) {
-                        res.writeHead(404, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'User not found or no changes made.'}));
-                    } else {
-                        res.writeHead(200, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'User details updated successfully.'}));
-                    }
-                } catch (error) {
-                    console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Bad Request'}));
-                    return;
-                }
-            }
-            else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
-            }
-        });
-    }
-
-    else if (req.url.startsWith("/profile/settings/userstatus") && req.method === "POST") {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            try {
-                const requestData = JSON.parse(body);  // Parse the request body
-                const queryObject = url.parse(req.url, true).query;
-
-                // Validate that the status is provided
-                if (!requestData.status || !queryObject.username) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Please provide a username and a status.' }));
-                    return;
-                }
-
-                // Validate the status value
-                const validStatuses = ["Online", "Do Not Disturb", "Offline"];
-                if (!validStatuses.includes(requestData.status)) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Invalid status value. Must be Online, Do Not Disturb, or Offline.' }));
-                    return;
-                }
-
-                // Call the updateUserStatus function from mongodb.js
-                const result = await changeUserStatus(queryObject, requestData);
-
-                // Check if a document was updated
-                if (result.modifiedCount === 0) {
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User not found or status not changed.' }));
-                } else {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'User status updated successfully.' }));
-                }
-            } catch (error) {
-                console.error("Error processing request: ", error);
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Bad Request' }));
-            }
-        });
-    }
-
-    else if (req.url.startsWith('/profile/settings') && req.method == "PUT") {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-                try {
-                    const settingsData = JSON.parse(body);
-
-                    // Call the updateUser function from mongodb.js
-                    const result = await editSettings(token, settingsData);
-
-                    // Handle the result of the update
-                    if (result.modifiedCount === 0) {
-                        res.writeHead(404, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Settings not found or no changes made.'}));
-                    } else {
-                        res.writeHead(200, {'Content-Type': 'application/json'});
-                        res.end(JSON.stringify({message: 'Settings details updated successfully.'}));
-                    }
-                } catch (error) {
-                    console.error("Error parsing JSON: ", error);
-                    res.writeHead(400, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify({message: 'Bad Request'}));
-                }
-            }
-            else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
-            }
-        })
-    }
-
     else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET" || req.method === "DELETE")){
         let body = '';
 
@@ -890,7 +925,9 @@ var server = http.createServer(async function (req, res) {
         ext === '.js' ? 'application/javascript' :
             ext === '.html' ? 'text/html' : 'text/plain';
 
+    if(req.url != '/settings/deleteuser' || req.url != '/settings/edituser') {
     serveFile(res, path.join(staticDir, req.url), contentType);
+    }
 
 });
 

@@ -114,3 +114,7 @@ function goToCreateTable() {
 function goToSearchTable() {
     window.location.href = "http://localhost:5000/table/search?";
 }
+
+function goToSettings() {
+    window.location.href = "http://localhost:5000/settings";
+}

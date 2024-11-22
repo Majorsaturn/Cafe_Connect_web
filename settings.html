@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Café Connect</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Settings Form Section -->
+<div class="make-table-form">
+    <h1>CAFÉ CONNECT</h1>
+    <h2>User Settings</h2>
+
+    <!-- Display Message for Success/Error -->
+    <div class="message" id="message"></div>
+
+
+
+    <!-- Button to Toggle Edit Form Visibility -->
+    <div class="padding">
+        <button type="button" onclick="toggleEditForm()">Edit Settings</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="toggleEditUserForm()">Edit User</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="deleteUser()">Delete Account</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="goToHome()">Back to Home</button>
+    </div>
+    <div class="padding">
+        <h2>Please click this if you delete your account</h2>
+        <button type="button" onclick="goToLogin()">Back to Login</button>
+    </div>
+</div>
+
+
+<!-- Edit Settings Form (Initially Hidden) -->
+<div id="editSettingsForm" style="display: none;">
+    <h3>Edit Settings</h3>
+
+    <!-- Input Field -->
+    <div class="padding">
+        <label for="input">Input:</label>
+        <input type="text" id="input" placeholder="Enter input value">
+    </div>
+
+    <!-- Output Field -->
+    <div class="padding">
+        <label for="output">Output:</label>
+        <input type="text" id="output" placeholder="Enter output value">
+    </div>
+
+    <!-- Light/Dark Theme Toggle -->
+    <div class="padding">
+        <label for="light_dark">Light/Dark Mode:</label>
+        <input type="checkbox" id="light_dark">
+    </div>
+
+    <!-- Notifications Toggle -->
+    <div class="padding">
+        <label for="notifications">Enable Notifications:</label>
+        <input type="checkbox" id="notifications">
+    </div>
+    <!-- Buttons to Save or Cancel Changes -->
+    <div class="padding">
+        <button type="button" onclick="editSettings(event)">Save Changes</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="cancelEdit()">Cancel</button>
+    </div>
+</div>
+<div id="editUserForm" style="display: none;">
+    <h3>Edit User</h3>
+
+    <div class="padding">
+        <label for="firstname">First Name:</label>
+        <input type="text" id="firstname" placeholder="Enter firstname">
+    </div>
+
+    <div class="padding">
+        <label for="lastname">Last Name:</label>
+        <input type="text" id="lastname" placeholder="Enter lastname">
+    </div>
+    <div class="padding">
+        <label for="email">Email:</label>
+        <input type="text" id="email" placeholder="Enter email">
+    </div>
+    <!-- Buttons to Save or Cancel Changes -->
+    <div class="padding">
+        <button type="button" onclick="editUser(event)">Save Changes</button>
+    </div>
+    <div class="padding">
+        <button type="button" onclick="cancelUserEdit()">Cancel</button>
+    </div>
+</div>
+<script src="settings.js"></script>
+</body>
+</html>
