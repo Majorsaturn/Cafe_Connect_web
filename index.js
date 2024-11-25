@@ -925,8 +925,10 @@ var server = http.createServer(async function (req, res) {
         ext === '.js' ? 'application/javascript' :
             ext === '.html' ? 'text/html' : 'text/plain';
 
-    if(req.url != '/settings/deleteuser' || req.url != '/settings/edituser') {
-    serveFile(res, path.join(staticDir, req.url), contentType);
+    if(req.url != '/settings/deleteuser') {
+        if (req.url != '/settings/edituser') {
+         serveFile(res, path.join(staticDir, req.url), contentType);
+        }
     }
 
 });

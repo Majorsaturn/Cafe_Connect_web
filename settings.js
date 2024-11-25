@@ -175,11 +175,32 @@ function cancelUserEdit() {
     const editUserForm = document.getElementById('editUserForm');
     editUserForm.style.display = 'none';
 }
+async function deleteUser() {
+    try {
+        const response = await fetch('/settings/deleteuser', {
+            method: 'DELETE',
+            headers: {},
+        });
+        if (response.ok) {
+            displayMessage('User deleted successfully!', 'green');
+            goToLogin();  // Redirect after successful deletion
+        } else {
+            const result = await response.json();
+            displayMessage('Failed to delete user: ' + result.message, 'red');
+        }
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        displayMessage('Error deleting user: ' + (error.message || 'Unknown error'), 'red');
+    }
+}
 
+// Function to go to the home page (handle the "Back to Home" button)
 function goToHome() {
     window.location.href = "http://localhost:5000/home";
 }
 
+// Function to go to the login page (after deletion)
 function goToLogin() {
-    window.location.href = "http://localhost:5000/login";
+    window.location.href = "http://localhost:5000/";
 }
+
