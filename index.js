@@ -9,7 +9,7 @@ const url = require('url');  // To parse query parameters from the URL
 
 const secret = 'jebus276';
 
-run();
+run().catch(console.dir);
 
 const staticDir = path.join(__dirname, 'public'); // Public directory where styles.css is located
 
