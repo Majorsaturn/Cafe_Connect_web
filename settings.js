@@ -175,3 +175,11 @@ function cancelUserEdit() {
     const editUserForm = document.getElementById('editUserForm');
     editUserForm.style.display = 'none';
 }
+
+function goToHome() {
+    window.location.href = "http://localhost:5000/home";
+}
+
+function goToLogin() {
+    window.location.href = "http://localhost:5000/login";
+}
