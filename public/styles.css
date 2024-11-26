@@ -215,6 +215,14 @@ button.logo {
     font-size: 14px;
 }
 
+#user-search-btn {
+    text-align: center;
+}
+
+.sidebar button:hover {
+    /*background-color: #4B2909;*/
+}
+
 /* Content Area */
 .content {
     flex: 1;
@@ -366,4 +374,101 @@ button.logo {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     background-color: #FACE8B;
     margin: 0 auto;
+}
+
+/* Popup Modal Styles */
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 300px;
+    text-align: center;
+}
+
+.popup-content h3 {
+    margin-bottom: 10px;
+    color: #4B2909;
+}
+
+.search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.search-bar input {
+    width: 94%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-bar button {
+    padding: 10px;
+    background-color: #9C6F44;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.search-bar button:hover {
+    background-color: #4B2909;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Search Results */
+.results-container {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+}
+
+.results-container h4 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #4B2909;
+    text-align: left;
+}
+
+.result-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.result-item:last-child {
+    border-bottom: none; /* Remove border from the last item */
+}
+
+.result-item p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.result-item strong {
+    font-weight: bold;
+    color: #4B2909;
 }

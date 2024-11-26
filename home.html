@@ -32,6 +32,7 @@
 <div class="main-container">
     <!-- Sidebar for additional navigation -->
     <aside class="sidebar">
+        <button id="user-search-btn" onclick="openUserSearchPopup()">Search for a User</button>
         <h3>Featured Tables</h3>
         <button onclick="joinTable('chilling')">Chilling/Studying</button>
         <button onclick="joinTable('brainstorming')">Game Brainstorming</button>
@@ -87,6 +88,21 @@
                 <button onclick="joinTable('bored')">Join</button>
             </div>
         </section>
+
+        <!-- User Search Popup -->
+        <div id="user-search-popup" class="popup hidden">
+            <div class="popup-content">
+                <h3>Search for a User</h3>
+                <div class="search-bar">
+                    <input type="text" id="username-input" placeholder="Enter name, username, or email" />
+                    <button id="search-button" onclick="searchForUser()">Search</button>
+                </div>
+                <div id="search-results" class="results-container">
+                    <!-- Results will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+
     </main>
 </div>
 

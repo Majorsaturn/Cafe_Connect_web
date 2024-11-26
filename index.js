@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { parse } = require('url');
-const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings, getAudio } = require('./mongodb');
+const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, searchUsersByName, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings, getAudio } = require('./mongodb');
 const cookie = require('cookie');
 const url = require('url');  // To parse query parameters from the URL
 
@@ -50,8 +50,7 @@ function verifyToken(req) {
     }
 
     try {
-        // Verify the token and return the decoded data
-        return token;
+        return jwt.verify(token, secret);  // Decode and verify token
     } catch (error) {
         return null; // Invalid token
     }
@@ -401,29 +400,45 @@ var server = http.createServer(async function (req, res) {
                     sendJSON(res, 400, { message: 'Bad Request' });
                 }
             });
-            return;  // Ensure no further code executes after response is sent
+            return;
         }
 
     }
 
-    else if (req.url.startsWith('/usersearch') && req.method == "GET") {
-        // Parse query parameters from the URL
-        const queryObject = url.parse(req.url, true).query;
+    // Handle user search request
+    if (req.url.startsWith('/search-user') && req.method === 'GET') {
+        const query = url.parse(req.url, true).query;
+        const searchTerm = query.username;
+
+        if (!searchTerm) {
+            sendJSON(res, 400, { message: 'Search term query parameter is required.' });
+            return;
+        }
 
         try {
-            // Call the searchUsers function from mongodb.js with the query parameters
-            const users = await searchUsers(queryObject);
+            let users;
 
-            // Send the retrieved users as JSON
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(users));
+            if (searchTerm.includes(' ')) {
+                // Split into first and last name
+                const [firstName, lastName] = searchTerm.split(' ');
+                users = await searchUsersByName(firstName, lastName); // Search by first and last name
+            } else {
+                users = await searchUsers(searchTerm);  // Search by username or email
+            }
 
+            if (users && users.length > 0) {
+                sendJSON(res, 200, { users });  // Return the list of users found
+            } else {
+                sendJSON(res, 404, { message: 'No users found.' });
+            }
         } catch (error) {
-            console.error("Error retrieving users: ", error);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'Internal Server Error' }));
+            console.error('Error searching for user:', error);
+            sendJSON(res, 500, { message: 'An error occurred while searching for the user.' });
         }
+        return;
     }
+
+
     if(req.url.startsWith("/settings")) {
         if (req.url.startsWith("/settings/deleteuser") && req.method == 'DELETE') {
             // Parse query parameters from the URL
@@ -606,71 +621,56 @@ var server = http.createServer(async function (req, res) {
             });
         }
     }
-    else if(req.url.startsWith('/friends') && (req.method === "POST" || req.method === "GET" || req.method === "DELETE")){
-        let body = '';
+    else if (req.url.startsWith('/friends')) {
+        // Only handle the request if there's an authorization token
+        const user = verifyToken(req);
 
+        if (!user) {
+            sendJSON(res, 401, { success: false, error: "Authorization token is missing or invalid." });
+            return;
+        }
+
+        // Proceed with the requested action (Add Friend, Remove Friend, List Friends)
+        let body = '';
         req.on('data', chunk => {
-            body += chunk.toString(); // Convert Buffer to string
+            body += chunk.toString();
         });
 
         req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
+            const parsedBody = JSON.parse(body);
+            const { username } = parsedBody;  // Get username from the request body
 
-            if(authHeader){
-                const token = authHeader;
-                let friendUser = null;
-                if(req.method === "POST"){
-                    const parsedBody = JSON.parse(body);
-                    friendUser = parsedBody.username;
-
-                    try{
-                    const result = await addFriend(token, friendUser);
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(result));
-                    }
-                    catch(error){
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: error.message }));
-                    }
+            if (req.method === 'POST') {
+                // Handle Add Friend
+                try {
+                    const result = await addFriend(user.userId, username);  // Pass userId directly
+                    sendJSON(res, 200, result);
+                } catch (error) {
+                    console.error('Error adding friend:', error);
+                    sendJSON(res, 500, { success: false, error: 'Error adding friend' });
                 }
-                else if(req.method === "GET"){
-                    try{
-                        const result = await listFriends(token);
-
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify(result));
-                    }
-                    catch(error){
-                        res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, error: error.message }));
-                    }
+            } else if (req.method === 'DELETE') {
+                // Handle Remove Friend
+                try {
+                    const result = await removeFriend(user.userId, username);  // Pass userId directly
+                    sendJSON(res, 200, result);
+                } catch (error) {
+                    console.error('Error removing friend:', error);
+                    sendJSON(res, 500, { success: false, error: 'Error removing friend' });
                 }
-                else if (req.url.startsWith('/friends/remove') && req.method === "DELETE") {
-                            const parsedBody = JSON.parse(body);
-                            const friendUser = parsedBody.username;
-
-                            try {
-                                // Call removeFriend function
-                                const result = await removeFriend(token, friendUser);
-
-                                res.writeHead(200, { 'Content-Type': 'application/json' });
-                                res.end(JSON.stringify(result));
-                            } catch (error) {
-                                console.error("Error in /friends/remove route:", error);
-                                res.writeHead(500, { 'Content-Type': 'application/json' });
-                                res.end(JSON.stringify({ success: false, error: error.message }));
-                            }
+            } else if (req.method === 'GET') {
+                // Handle List Friends (if required)
+                try {
+                    const result = await listFriends(user.userId);  // Pass userId directly
+                    sendJSON(res, 200, result);
+                } catch (error) {
+                    console.error('Error listing friends:', error);
+                    sendJSON(res, 500, { success: false, error: 'Error listing friends' });
                 }
-            }
-            else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
             }
         });
-
     }
+
 
     else if (req.url.startsWith('/users/block') && req.method === "POST") {
         let body = '';
