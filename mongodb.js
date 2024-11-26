@@ -1,4 +1,3 @@
-// MongoDB connection URI
 const fs = require('fs');
 const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongodb');
 const bcrypt = require('bcryptjs');

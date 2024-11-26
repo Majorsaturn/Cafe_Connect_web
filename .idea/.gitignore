@@ -3,10 +3,3 @@
 /workspace.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-
-node_modules/
-.idea/vcs.xml
-
-.expo/
-
-package-lock.json
