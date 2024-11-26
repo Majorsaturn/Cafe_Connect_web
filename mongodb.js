@@ -55,7 +55,11 @@ async function signUp(userData){
     const { password, ...rest } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await Users.insertOne({ ...rest, password: hashedPassword }); //signup id
+    const result = await Users.insertOne({ //signup id
+        ...rest,
+        password: hashedPassword,
+        friends: []
+    });
     console.log("Insert result:", result);
 
     updateCriteria._id = settingsResult.insertedId;
@@ -95,28 +99,30 @@ async function userLogin(queryObject){
     }
 }
 
-// Function to search for users based on query parameters
-async function searchUsers(queryObject) {
-    const collection = client.db("CC_1st").collection("Users");
-    const query = {};
+async function searchUsers(searchTerm) {
+    const db = client.db("CC_1st");
+    const usersCollection = db.collection("Users");
 
-    if (queryObject.email) {
-        query.email = queryObject.email;
-    }
-    else if (queryObject.name) {
-        query.name = queryObject.name;
-    }
-    else if (queryObject.username) {
-        query.username = queryObject.username;
-    }
-    else if (queryObject.id) {
-        query._id = new ObjectId(queryObject.id);
-    }
-
-    // Find users that match the query
-    const users = await collection.findOne(query)
-    return users;
+    // Search for a user by username or email
+    return usersCollection.find({
+        $or: [
+            { username: searchTerm },
+            { email: searchTerm }
+        ]
+    }).toArray();
 }
+
+async function searchUsersByName(firstName, lastName) {
+    const db = client.db("CC_1st");
+    const usersCollection = db.collection("Users");
+
+    // Search for users by first name and last name
+    return usersCollection.find({
+        firstName: firstName,
+        lastName: lastName
+    }).toArray();
+}
+
 
 async function deleteUser(token) {
     const Users = client.db("CC_1st").collection("Users");
@@ -180,81 +186,78 @@ async function changeUserStatus(queryObject, requestData) {
     return result;
 }
 
-async function addFriend(token, friendUser){
-
-    try{
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
-
-        const collection = client.db("CC_1st").collection("Users");
-        const exists = await collection.findOne({username: friendUser});
-        if(!exists){
-            console.log(`Failed to add friend ${friendUser}.`);
-            return { success: false, message: `Failed to add friend ${friendUser}.` };
-        }
-        const result = await collection.updateOne(
-            { _id: userId },
-            { $addToSet: {friends: friendUser} }
-            );
-
-        if (result.modifiedCount > 0) {
-            console.log(`Friend ${friendUser} added successfully!`);
-            return { success: true, message: `Friend ${friendUser} added successfully!` };
-        } else {
-            console.log(`Failed to add friend ${friendUser}.`);
-            return { success: false, message: `Failed to add friend ${friendUser}.` };
-        }
-    }
-    catch (error) {
-        console.error("Error adding friend:", error);
-        return {success: false, error: "Failed to authenticate or add friend."};
-    }
-}
-
-async function listFriends(token){
+async function addFriend(userId, friendUser) {
     try {
         const collection = client.db("CC_1st").collection("Users");
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
 
-        const friendList = await collection.findOne(
-            { _id: userId },
-            { projection: {friends: 1}}
-            );
-        return friendList.friends;
-    }
-    catch(error){
-        console.error("Error loading friends:", error);
-        return {success: false, error: "Failed to load friends."};
-    }
-}
-
-async function removeFriend(token, friendUser) {
-    try {
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
-
-        const collection = client.db("CC_1st").collection("Users");
-
-        // Check if the friend exists in the user's friends list
-        const user = await collection.findOne({ _id: userId, friends: friendUser });
+        // Find the user by username
+        const user = await collection.findOne({ username: friendUser });
         if (!user) {
-            console.log(`Friend ${friendUser} not found in the user's friend list.`);
-            return { success: false, message: `Friend ${friendUser} is not in your friends list.` };
+            console.log(`User ${friendUser} not found.`);
+            return { success: false, message: `User ${friendUser} not found.` };
         }
 
-        // Remove the friend from the user's friends list
+        // Add the friend to the current user's friends list (by ID)
         const result = await collection.updateOne(
-            { _id: userId },
-            { $pull: { friends: friendUser } }
+            { _id: new ObjectId(userId) },  // Using userId directly
+            { $addToSet: { friends: user._id } }
         );
 
         if (result.modifiedCount > 0) {
-            console.log(`Friend ${friendUser} removed successfully!`);
-            return { success: true, message: `Friend ${friendUser} removed successfully!` };
+            console.log(`User ${friendUser} added successfully!`);
+            return { success: true, message: `User ${friendUser} added successfully!` };
         } else {
-            console.log(`Failed to remove friend ${friendUser}.`);
-            return { success: false, message: `Failed to remove friend ${friendUser}.` };
+            console.log(`Failed to add user ${friendUser}.`);
+            return { success: false, message: `Failed to add user ${friendUser}.` };
+        }
+    } catch (error) {
+        console.error("Error adding friend:", error);
+        return { success: false, error: "Failed to authenticate or add friend." };
+    }
+}
+
+async function listFriends(userId) {
+    try {
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Find the user's friends by userId
+        const user = await collection.findOne(
+            { _id: new ObjectId(userId) },  // Using userId directly
+            { projection: { friends: 1 } }
+        );
+
+        // Look up the friends' details
+        const friends = await collection.find({ _id: { $in: user.friends } }).toArray();
+
+        return friends;
+    } catch (error) {
+        console.error("Error listing friends:", error);
+        return { success: false, error: "Failed to load friends." };
+    }
+}
+
+async function removeFriend(userId, friendUser) {
+    try {
+        const collection = client.db("CC_1st").collection("Users");
+
+        // Find the user by username
+        const user = await collection.findOne({ username: friendUser });
+        if (!user) {
+            return { success: false, message: `User ${friendUser} not found.` };
+        }
+
+        // Remove the friend from the current user's friends list
+        const result = await collection.updateOne(
+            { _id: new ObjectId(userId) },  // Using userId directly
+            { $pull: { friends: user._id } }
+        );
+
+        if (result.modifiedCount > 0) {
+            console.log(`User ${friendUser} removed successfully!`);
+            return { success: true, message: `User ${friendUser} removed successfully!` };
+        } else {
+            console.log(`Failed to remove user ${friendUser}.`);
+            return { success: false, message: `Failed to remove user ${friendUser}.` };
         }
     } catch (error) {
         console.error("Error removing friend:", error);
@@ -810,6 +813,7 @@ module.exports = {
     signUp,
     userLogin,
     searchUsers,
+    searchUsersByName,
     deleteUser,
     editUser,
     changeUserStatus,

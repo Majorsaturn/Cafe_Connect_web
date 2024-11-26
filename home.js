@@ -7,7 +7,7 @@ let audios = [
 
 let currentAudioIndex = 0;  // Index of the audio that is currently being played
 
-// Get references to the audio player and buttons
+// Get references to the buttons
 const audioPlayer = document.getElementById('audio-player');
 const playPauseButton = document.getElementById('play-pause');
 const nextButton = document.getElementById('next');
@@ -60,6 +60,103 @@ prevButton.addEventListener('click', function() {
     audioPlayer.play();
     playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';
 });
+
+// Open the user search popup
+function openUserSearchPopup() {
+    const popup = document.getElementById('user-search-popup');
+    popup.classList.remove('hidden');
+}
+
+// Close the popup if clicking outside of it
+window.onclick = function (event) {
+    const popup = document.getElementById('user-search-popup');
+    if (event.target === popup) {
+        popup.classList.add('hidden');
+    }
+};
+
+async function searchForUser() {
+    const usernameInput = document.getElementById('username-input');
+    const searchResultsContainer = document.getElementById('search-results');
+
+    // Clear previous results
+    searchResultsContainer.innerHTML = '';
+
+    if (!usernameInput.value) {
+        searchResultsContainer.innerHTML = '<p>Please enter a username, full name, or email.</p>';
+        return;
+    }
+
+    const url = `/search-user?username=${usernameInput.value}`; // Updated URL
+
+    try {
+        const response = await fetch(url);
+
+        // Check if the response is successful
+        if (!response.ok) {
+            searchResultsContainer.innerHTML = `<p>Failed to fetch data. Server responded with status: ${response.status}</p>`;
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.message) {
+            searchResultsContainer.innerHTML = `<p>${data.message}</p>`;
+        } else if (data.users && data.users.length > 0) {
+            searchResultsContainer.innerHTML = '<h4>Users</h4>';
+
+            data.users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.classList.add('result-item');
+
+                userDiv.innerHTML = `
+                    <p><strong>Username:</strong> ${user.username}</p>
+                    <button class="friend-btn" data-user-id="${user._id}">
+                        ${user.isFriend ? 'Remove Friend' : 'Add Friend'}
+                    </button>
+                `;
+
+                const friendButton = userDiv.querySelector('.friend-btn');
+                friendButton.addEventListener('click', () => handleFriendClick(user._id, friendButton));
+
+                searchResultsContainer.appendChild(userDiv);
+            });
+        }
+    } catch (err) {
+        searchResultsContainer.innerHTML = '<p>An error occurred while searching.</p>';
+        console.error('Error during fetch:', err);
+    }
+}
+
+async function handleFriendClick(userId, button, event) {
+    event.preventDefault(); // Only use this if necessary to prevent form submissions, etc.
+
+    const action = button.textContent === 'Add Friend' ? 'add' : 'remove';
+
+    try {
+        const token = document.cookie.split('; ').find(row => row.startsWith('authToken=')).split('=')[1];
+
+        const response = await fetch(`/friends`, {
+            method: 'POST', // For adding
+            body: JSON.stringify({ username: userId }), // Sending the friend's username
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Pass the token here
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            button.textContent = action === 'add' ? 'Remove Friend' : 'Add Friend';
+        } else {
+            alert(data.message || 'Error updating friend status.');
+        }
+    } catch (error) {
+        console.error('Error handling friend action:', error);
+    }
+}
+
 
 function joinTable(tableName) {
     // Placeholder function to handle joining tables
