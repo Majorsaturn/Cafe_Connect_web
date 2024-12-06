@@ -13,7 +13,6 @@ const defaultSettings = {
     notifications: false
 }
 
-
 // Create a MongoClient with MongoClientOptions
 const client = new MongoClient(uri, {
     serverApi: {
@@ -58,7 +57,7 @@ async function signUp(userData){
     const result = await Users.insertOne({ //signup id
         ...rest,
         password: hashedPassword,
-        friends: []
+        followers: []
     });
     console.log("Insert result:", result);
 
@@ -186,83 +185,58 @@ async function changeUserStatus(queryObject, requestData) {
     return result;
 }
 
-async function addFriend(userId, friendUser) {
-    try {
-        const collection = client.db("CC_1st").collection("Users");
+async function addFollower(currentUserId, targetUserId) {
+    const Followers = client.db("CC_1st").collection("Followers");
 
-        // Find the user by username
-        const user = await collection.findOne({ username: friendUser });
-        if (!user) {
-            console.log(`User ${friendUser} not found.`);
-            return { success: false, message: `User ${friendUser} not found.` };
-        }
+    // Convert user IDs to ObjectIds for MongoDB
+    const currentUserIdObj = new ObjectId(currentUserId);
+    const targetUserIdObj = new ObjectId(targetUserId);
 
-        // Add the friend to the current user's friends list (by ID)
-        const result = await collection.updateOne(
-            { _id: new ObjectId(userId) },  // Using userId directly
-            { $addToSet: { friends: user._id } }
-        );
+    // Check if the follow relationship already exists
+    const existingFollow = await Followers.findOne({
+        userId: currentUserIdObj,
+        followerId: targetUserIdObj
+    });
 
-        if (result.modifiedCount > 0) {
-            console.log(`User ${friendUser} added successfully!`);
-            return { success: true, message: `User ${friendUser} added successfully!` };
-        } else {
-            console.log(`Failed to add user ${friendUser}.`);
-            return { success: false, message: `Failed to add user ${friendUser}.` };
-        }
-    } catch (error) {
-        console.error("Error adding friend:", error);
-        return { success: false, error: "Failed to authenticate or add friend." };
+    if (existingFollow) {
+        throw new Error("You are already following this user.");
     }
+
+    // Add the new follower
+    await Followers.insertOne({ userId: currentUserIdObj, followerId: targetUserIdObj });
+    return { message: "Followed successfully!" };
 }
 
-async function listFriends(userId) {
-    try {
-        const collection = client.db("CC_1st").collection("Users");
+async function removeFollower(currentUserId, targetUserId) {
+    const Followers = client.db("CC_1st").collection("Followers");
 
-        // Find the user's friends by userId
-        const user = await collection.findOne(
-            { _id: new ObjectId(userId) },  // Using userId directly
-            { projection: { friends: 1 } }
-        );
+    // Convert user IDs to ObjectIds for MongoDB
+    const currentUserIdObj = new ObjectId(currentUserId);
+    const targetUserIdObj = new ObjectId(targetUserId);
 
-        // Look up the friends' details
-        const friends = await collection.find({ _id: { $in: user.friends } }).toArray();
+    // Delete the follow document
+    const result = await Followers.deleteOne({
+        userId: currentUserIdObj,
+        followerId: targetUserIdObj
+    });
 
-        return friends;
-    } catch (error) {
-        console.error("Error listing friends:", error);
-        return { success: false, error: "Failed to load friends." };
+    if (result.deletedCount === 0) {
+        throw new Error("Follow relationship does not exist.");
     }
+
+    return { message: "Unfollowed successfully." };
 }
 
-async function removeFriend(userId, friendUser) {
-    try {
-        const collection = client.db("CC_1st").collection("Users");
+async function listFollowers(userId) {
+    const Followers = client.db("CC_1st").collection("Followers");
+    const Users = client.db("CC_1st").collection("Users");
 
-        // Find the user by username
-        const user = await collection.findOne({ username: friendUser });
-        if (!user) {
-            return { success: false, message: `User ${friendUser} not found.` };
-        }
+    // Find all followers for the given userId
+    const followers = await Followers.find({ userId: userId }).toArray();
 
-        // Remove the friend from the current user's friends list
-        const result = await collection.updateOne(
-            { _id: new ObjectId(userId) },  // Using userId directly
-            { $pull: { friends: user._id } }
-        );
-
-        if (result.modifiedCount > 0) {
-            console.log(`User ${friendUser} removed successfully!`);
-            return { success: true, message: `User ${friendUser} removed successfully!` };
-        } else {
-            console.log(`Failed to remove user ${friendUser}.`);
-            return { success: false, message: `Failed to remove user ${friendUser}.` };
-        }
-    } catch (error) {
-        console.error("Error removing friend:", error);
-        return { success: false, error: "Failed to authenticate or remove friend." };
-    }
+    // Extract follower IDs and retrieve user details
+    const followerIds = followers.map(f => f.followerId);
+    return Users.find({ _id: { $in: followerIds.map(id => ObjectId(id)) } }).toArray();
 }
 
 async function blockUser(token, blockUser) {
@@ -817,9 +791,9 @@ module.exports = {
     deleteUser,
     editUser,
     changeUserStatus,
-    addFriend,
-    listFriends,
-    removeFriend,
+    addFollower,
+    listFollowers,
+    removeFollower,
     blockUser,
     unblockUser,
     listBlockedUsers,

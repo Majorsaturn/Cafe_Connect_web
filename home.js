@@ -79,7 +79,6 @@ async function searchForUser() {
     const usernameInput = document.getElementById('username-input');
     const searchResultsContainer = document.getElementById('search-results');
 
-    // Clear previous results
     searchResultsContainer.innerHTML = '';
 
     if (!usernameInput.value) {
@@ -87,76 +86,95 @@ async function searchForUser() {
         return;
     }
 
-    const url = `/search-user?username=${usernameInput.value}`; // Updated URL
+    try {
+        const response = await fetch(`/search-user?username=${usernameInput.value}`);
+        const followersResponse = await fetch('/list-followers');
+
+        if (!response.ok || !followersResponse.ok) {
+            throw new Error('Failed to fetch data.');
+        }
+
+        const { users } = await response.json();
+        const { followers } = await followersResponse.json();
+
+        const followerIds = followers.map(f => f._id);
+
+        users.forEach(user => {
+            user.isFollower = followerIds.includes(user._id);  // Correct field for following status
+        });
+
+        renderSearchResults(users, searchResultsContainer);
+    } catch (err) {
+        console.error('Error during fetch:', err);
+        searchResultsContainer.innerHTML = '<p>An error occurred while searching.</p>';
+    }
+}
+
+function renderSearchResults(users, container) {
+    if (users.length === 0) {
+        container.innerHTML = '<p>No users found.</p>';
+        return;
+    }
+
+    container.innerHTML = '<h4>Users</h4>';
+    users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.classList.add('result-item');
+        userDiv.innerHTML = `
+            <p><strong>Username:</strong> ${user.username}</p>
+            <button class="follower-btn" data-user-id="${user._id}">
+                ${user.isfollower ? 'Unfollow' : 'Follow'}
+            </button>
+        `;
+
+        const followerButton = userDiv.querySelector('.follower-btn');
+        followerButton.addEventListener('click', () => handleFollowerClick(user._id, followerButton));
+        container.appendChild(userDiv);
+    });
+}
+
+async function handleFollowerClick(targetUserId, button) {
+    // Change the text logic to match what's in your UI
+    const action = button.textContent.trim() === 'Follow' ? 'add-follower' : 'remove-follower';
+    const url = `/${action}`;
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId })
+        });
 
-        // Check if the response is successful
         if (!response.ok) {
-            searchResultsContainer.innerHTML = `<p>Failed to fetch data. Server responded with status: ${response.status}</p>`;
+            const error = await response.json();
+            console.error(error.message);
+            showConfirmationMessage(button, error.message, "red");
             return;
         }
 
-        const data = await response.json();
-
-        if (data.message) {
-            searchResultsContainer.innerHTML = `<p>${data.message}</p>`;
-        } else if (data.users && data.users.length > 0) {
-            searchResultsContainer.innerHTML = '<h4>Users</h4>';
-
-            data.users.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.classList.add('result-item');
-
-                userDiv.innerHTML = `
-                    <p><strong>Username:</strong> ${user.username}</p>
-                    <button class="friend-btn" data-user-id="${user._id}">
-                        ${user.isFriend ? 'Remove Friend' : 'Add Friend'}
-                    </button>
-                `;
-
-                const friendButton = userDiv.querySelector('.friend-btn');
-                friendButton.addEventListener('click', () => handleFriendClick(user._id, friendButton));
-
-                searchResultsContainer.appendChild(userDiv);
-            });
-        }
+        const result = await response.json();
+        showConfirmationMessage(button, result.message, "green");  // Use the result message from the API
+        // Toggle button text based on action
+        button.textContent = action === 'add-follower' ? 'Unfollow' : 'Follow';
     } catch (err) {
-        searchResultsContainer.innerHTML = '<p>An error occurred while searching.</p>';
-        console.error('Error during fetch:', err);
+        console.error('Error handling follow action:', err);
+        showConfirmationMessage(button, "An error occurred. Please try again.", "red");
     }
 }
 
-async function handleFriendClick(userId, button, event) {
-    event.preventDefault(); // Only use this if necessary to prevent form submissions, etc.
+function showConfirmationMessage(button, message, color) {
+    // Remove any existing message
+    const existingMessage = button.nextElementSibling;
+    if (existingMessage) existingMessage.remove();
 
-    const action = button.textContent === 'Add Friend' ? 'add' : 'remove';
-
-    try {
-        const token = document.cookie.split('; ').find(row => row.startsWith('authToken=')).split('=')[1];
-
-        const response = await fetch(`/friends`, {
-            method: 'POST', // For adding
-            body: JSON.stringify({ username: userId }), // Sending the friend's username
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Pass the token here
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            button.textContent = action === 'add' ? 'Remove Friend' : 'Add Friend';
-        } else {
-            alert(data.message || 'Error updating friend status.');
-        }
-    } catch (error) {
-        console.error('Error handling friend action:', error);
-    }
+    // Add a new confirmation message
+    const messageElement = document.createElement('span');
+    messageElement.textContent = message;
+    messageElement.style.color = color;
+    messageElement.style.fontSize = "0.9em";
+    messageElement.style.marginLeft = "10px";
+    button.parentElement.appendChild(messageElement);
 }
-
 
 function joinTable(tableName) {
     // Placeholder function to handle joining tables

@@ -219,6 +219,10 @@ button.logo {
     text-align: center;
 }
 
+#view-friend-requests-btn {
+    text-align: center;
+}
+
 .sidebar button:hover {
     /*background-color: #4B2909;*/
 }

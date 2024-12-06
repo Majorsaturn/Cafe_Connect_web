@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { parse } = require('url');
-const { run, joinTable, deleteTable, viewTable, makeTable, listFriends, addFriend, removeFriend, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, searchUsersByName, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings, getAudio } = require('./mongodb');
+const { run, joinTable, deleteTable, viewTable, makeTable, addFollower, listFollowers, removeFollower, blockUser, unblockUser, listBlockedUsers, signUp, searchUsers, searchUsersByName, deleteUser, editUser, changeUserStatus, userLogin, getSubscriptionDetails, viewSubscription, purchaseSubscription, cancelSubscription, editTable, searchTable, getTableInvite, editSettings, getAudio } = require('./mongodb');
 const cookie = require('cookie');
 const url = require('url');  // To parse query parameters from the URL
 
@@ -11,7 +11,7 @@ const secret = 'jebus276';
 
 run().catch(console.dir);
 
-const staticDir = path.join(__dirname, 'public'); // Public directory where styles.css is located
+const staticDir = path.join(__dirname, 'public'); // Public directory
 
 
 // Helper to send JSON responses
@@ -50,7 +50,8 @@ function verifyToken(req) {
     }
 
     try {
-        return jwt.verify(token, secret);  // Decode and verify token
+        // Verify the token and return the decoded data
+        return token;
     } catch (error) {
         return null; // Invalid token
     }
@@ -210,9 +211,6 @@ var server = http.createServer(async function (req, res) {
             return;  // Ensure no further code executes after response is sent
         }
 
-
-
-
         // Serve table creation page
         if (req.url === '/table/search?' && req.method === 'GET') {
             serveFile(res, path.join(__dirname, 'searchTable.html'), 'text/html');
@@ -260,7 +258,6 @@ var server = http.createServer(async function (req, res) {
             return;
         }
 
-
         // View table route
         if (req.url.startsWith('/table/view') && req.method === "POST" ) {
             // Parse query parameters
@@ -300,7 +297,6 @@ var server = http.createServer(async function (req, res) {
             }
             return;  // Ensure no further code executes after response is sent
         }
-
 
 
         // Serve table creation page
@@ -402,7 +398,6 @@ var server = http.createServer(async function (req, res) {
             });
             return;
         }
-
     }
 
     // Handle user search request
@@ -445,7 +440,7 @@ var server = http.createServer(async function (req, res) {
             const tokenData = verifyToken(req);
             if (!tokenData) {
                 sendJSON(res, 401, {message: 'Unauthorized: Invalid token'});
-                return;  // Prevent further execution
+                return;
             }
 
             try {
@@ -621,56 +616,70 @@ var server = http.createServer(async function (req, res) {
             });
         }
     }
-    else if (req.url.startsWith('/friends')) {
-        // Only handle the request if there's an authorization token
-        const user = verifyToken(req);
 
-        if (!user) {
-            sendJSON(res, 401, { success: false, error: "Authorization token is missing or invalid." });
-            return;
-        }
-
-        // Proceed with the requested action (Add Friend, Remove Friend, List Friends)
+    // Add Follower
+    if (req.url.startsWith('/add-follower') && req.method === 'POST') {
         let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
+        req.on('data', chunk => { body += chunk; });
         req.on('end', async () => {
-            const parsedBody = JSON.parse(body);
-            const { username } = parsedBody;  // Get username from the request body
+            try {
+                const { targetUserId } = JSON.parse(body);
+                const token = verifyToken(req);
 
-            if (req.method === 'POST') {
-                // Handle Add Friend
-                try {
-                    const result = await addFriend(user.userId, username);  // Pass userId directly
-                    sendJSON(res, 200, result);
-                } catch (error) {
-                    console.error('Error adding friend:', error);
-                    sendJSON(res, 500, { success: false, error: 'Error adding friend' });
+                if (!token) {
+                    return sendJSON(res, 401, { message: "Unauthorized." });
                 }
-            } else if (req.method === 'DELETE') {
-                // Handle Remove Friend
-                try {
-                    const result = await removeFriend(user.userId, username);  // Pass userId directly
-                    sendJSON(res, 200, result);
-                } catch (error) {
-                    console.error('Error removing friend:', error);
-                    sendJSON(res, 500, { success: false, error: 'Error removing friend' });
-                }
-            } else if (req.method === 'GET') {
-                // Handle List Friends (if required)
-                try {
-                    const result = await listFriends(user.userId);  // Pass userId directly
-                    sendJSON(res, 200, result);
-                } catch (error) {
-                    console.error('Error listing friends:', error);
-                    sendJSON(res, 500, { success: false, error: 'Error listing friends' });
-                }
+
+                const decoded = jwt.verify(token, secret);
+                const result = await addFollower(decoded.userId, targetUserId);
+                sendJSON(res, 200, result);
+            } catch (err) {
+                sendJSON(res, 500, { message: err.message });
             }
         });
+        return;
     }
 
+// List Followers
+    if (req.url.startsWith('/list-followers') && req.method === 'GET') {
+        try {
+            const token = verifyToken(req);
+
+            if (!token) {
+                return sendJSON(res, 401, { message: "Unauthorized." });
+            }
+
+            const decoded = jwt.verify(token, secret);
+            const followers = await listFollowers(decoded.userId);
+            sendJSON(res, 200, { followers });
+        } catch (err) {
+            sendJSON(res, 500, { message: err.message });
+        }
+        return;
+    }
+
+// Remove Follower
+    if (req.url.startsWith('/remove-follower') && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+            try {
+                const { targetUserId } = JSON.parse(body);
+                const token = verifyToken(req);
+
+                if (!token) {
+                    return sendJSON(res, 401, { message: "Unauthorized." });
+                }
+
+                const decoded = jwt.verify(token, secret);
+                const result = await removeFollower(decoded.userId, targetUserId);
+                sendJSON(res, 200, result);
+            } catch (err) {
+                sendJSON(res, 500, { message: err.message });
+            }
+        });
+        return;
+    }
 
     else if (req.url.startsWith('/users/block') && req.method === "POST") {
         let body = '';
@@ -938,5 +947,3 @@ server.listen(5000, () => {
     console.log('Server running on http://localhost:5000');
 });
 console.log('Node.js web server at port 5000 is running..');
-
-

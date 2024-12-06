@@ -12,9 +12,6 @@
 <nav class="top-nav">
     <button class="logo" onclick="goToHome()">CAFÉ CONNECT</button>
     <div class="nav-links">
-        <button onclick="navigateToHome()">Home</button>
-        <button onclick="navigateToAudio()">Audio</button>
-        <button onclick="navigateToFriends()">Friends</button>
         <!-- Profile dropdown container -->
         <div class="profile-dropdown" id=":profileDropdown" onClick="toggleDropdown(event)">
             <img src="default_pfp.png" alt="Profile Picture" class="profile-img" />
@@ -33,6 +30,7 @@
     <!-- Sidebar for additional navigation -->
     <aside class="sidebar">
         <button id="user-search-btn" onclick="openUserSearchPopup()">Search for a User</button>
+        <button id="view-followers-btn" onclick="openFollowersPopup()">View Followers</button>
         <h3>Featured Tables</h3>
         <button onclick="joinTable('chilling')">Chilling/Studying</button>
         <button onclick="joinTable('brainstorming')">Game Brainstorming</button>
@@ -102,6 +100,18 @@
                 </div>
             </div>
         </div>
+
+        <!-- List Followers Popup -->
+        <div id="followers-popup" class="popup hidden">
+            <div class="popup-content">
+                <h3>Followers</h3>
+                <div id="followers-container">
+                    <!-- Followers will be dynamically populated here -->
+                </div>
+            </div>
+        </div>
+
+
 
     </main>
 </div>

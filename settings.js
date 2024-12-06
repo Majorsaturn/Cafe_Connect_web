@@ -74,7 +74,7 @@ async function editSettings(event) {
             const result = await response.json();
             displayMessage('Failed to update settings: ' + result.message, 'red');
         }
-    } catch (error) {
+    } catch {
         console.error('Error updating settings:', error);
         displayMessage("Error updating settings.", 'red');
     }
@@ -183,7 +183,7 @@ async function deleteUser() {
         });
         if (response.ok) {
             displayMessage('User deleted successfully!', 'green');
-            goToLogin();  // Redirect after successful deletion
+            goToSignup();  // Redirect after successful deletion
         } else {
             const result = await response.json();
             displayMessage('Failed to delete user: ' + result.message, 'red');
@@ -199,8 +199,7 @@ function goToHome() {
     window.location.href = "http://localhost:5000/home";
 }
 
-// Function to go to the login page (after deletion)
-function goToLogin() {
-    window.location.href = "http://localhost:5000/";
+// Function to redirect to the signup page after deletion
+function goToSignup() {
+    window.location.href = "http://localhost:5000/signup";
 }
-
