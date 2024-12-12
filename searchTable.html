@@ -7,27 +7,26 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="make-table-form">
+        <h1>CAFÉ CONNECT</h1>
+        <h2>Table Search</h2>
+        <form id="makeTableForm">
+            <div class="form-group">
+                <label for="tablename">Table Name</label>
+                <input type="text" id="tablename" required>
+            </div>
+            <!-- This is where search results will be displayed dynamically -->
+            <div id="searchResults"></div>
 
-<div class="make-table-form">
-    <h1>CAFÉ CONNECT</h1>
-    <h2>Table Search</h2>
-    <form id="makeTableForm">
-        <div class="form-group">
-            <label for="tablename">Table Name</label>
-            <input type="text" id="tablename" required>
-        </div>
-        <!-- This is where search results will be displayed dynamically -->
-        <div id="searchResults"></div>
+            <!-- Search button to search for existing tables -->
+            <button type="button" onclick="searchTable(event)">Search for Tables</button>
 
-        <!-- Search button to search for existing tables -->
-        <button type="button" onclick="searchTable(event)">Search for Tables</button>
+            <h5 class="account-text">Changed your mind?</h5>
+            <button type="button" onclick="goToHome(event)">Back to Home</button>
+        </form>
+        <div class="message" id="message"></div>
+    </div>
 
-        <h5 class="account-text">Changed your mind?</h5>
-        <button type="button" onclick="goToHome(event)">Back to Home</button>
-    </form>
-    <div class="message" id="message"></div>
-</div>
-
-<script src="searchTable.js"></script>
+    <script src="searchTable.js"></script>
 </body>
 </html>

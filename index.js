@@ -640,7 +640,7 @@ var server = http.createServer(async function (req, res) {
         return;
     }
 
-// List Followers
+    // List Followers
     if (req.url.startsWith('/list-followers') && req.method === 'GET') {
         try {
             const token = verifyToken(req);
@@ -658,7 +658,7 @@ var server = http.createServer(async function (req, res) {
         return;
     }
 
-// Remove Follower
+    // Remove Follower
     if (req.url.startsWith('/remove-follower') && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
@@ -681,103 +681,78 @@ var server = http.createServer(async function (req, res) {
         return;
     }
 
-    else if (req.url.startsWith('/users/block') && req.method === "POST") {
+    // Block User
+    if (req.url.startsWith('/block-user') && req.method === 'POST') {
         let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
+        req.on('data', chunk => { body += chunk; });
         req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-                const parsedBody = JSON.parse(body);
-                const blockUsername = parsedBody.username;
-
-                try {
-                    // Call blockUser function
-                    const result = await blockUser(token, blockUsername);
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(result));
-                } catch (error) {
-                    console.error("Error in /users/block route:", error);
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: error.message }));
-                }
-            } else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
-            }
-        });
-    }
-
-    else if (req.url === '/users/unblock' && req.method === "DELETE") {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString(); // Convert Buffer to string
-        });
-
-        req.on('end', async () => {
-            const authHeader = req.headers['authorization'];
-
-            if (authHeader) {
-                const token = authHeader;
-
-                try {
-                    const parsedBody = JSON.parse(body);
-                    const blockedUser = parsedBody.username;
-
-                    // Check if blockedUser was provided
-                    if (!blockedUser) {
-                        res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, error: "Blocked user username is required" }));
-                        return;
-                    }
-
-                    const result = await unblockUser(token, blockedUser);
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(result));
-                } catch (error) {
-                    console.error("Error in /users/unblock route:", error);
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: error.message }));
-                }
-            } else {
-                // If the Authorization header is missing
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
-            }
-        });
-    }
-
-    else if (req.url === '/users/blockedlist' && req.method === "GET") {
-        const authHeader = req.headers['authorization'];
-
-        if (authHeader) {
-            const token = authHeader;
-
             try {
-                const result = await listBlockedUsers(token);
+                const { targetUserId } = JSON.parse(body);
+                const token = verifyToken(req);
 
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(result));
-            } catch (error) {
-                console.error("Error in /users/blocked route:", error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: error.message }));
+                if (!token) {
+                    return sendJSON(res, 401, { message: "Unauthorized." });
+                }
+
+                const decoded = jwt.verify(token, secret);
+                await blockUser(decoded.userId, targetUserId);
+                sendJSON(res, 200, { message: "User blocked successfully." });
+            } catch (err) {
+                sendJSON(res, 500, { message: err.message });
             }
-        } else {
-            // If the Authorization header is missing
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, error: "Authorization token is missing" }));
+        });
+        return;
+    }
+
+    // Unblock User
+    if (req.url.startsWith('/unblock-user') && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+            try {
+                const { targetUserId } = JSON.parse(body);
+                const token = verifyToken(req);
+
+                if (!token) {
+                    return sendJSON(res, 401, { message: "Unauthorized." });
+                }
+
+                const decoded = jwt.verify(token, secret);
+                const result = await unblockUser(decoded.userId, targetUserId);
+                sendJSON(res, 200, result);
+            } catch (err) {
+                sendJSON(res, 500, { message: err.message });
+            }
+        });
+        return;
+    }
+
+    else if (req.url === '/settings/blockedList' && req.method === "GET") {
+        const userId = req.headers['user-id'];
+
+        if (!userId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: "User ID is missing" }));
+            return;
+        }
+
+        try {
+            const result = await listBlockedUsers(userId);
+
+            if (result.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result.blockedUsers));  // Send only the list of users
+            } else {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: result.error }));
+            }
+        } catch (error) {
+            console.error("Error in /settings/blockedList:", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: error.message }));
         }
     }
+
 
 
     else if (req.url === "/subscription" && req.method === "GET") {

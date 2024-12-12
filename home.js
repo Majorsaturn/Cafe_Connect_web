@@ -100,7 +100,7 @@ async function searchForUser() {
         const followerIds = followers.map(f => f._id);
 
         users.forEach(user => {
-            user.isFollower = followerIds.includes(user._id);  // Correct field for following status
+            user.isFollower = followerIds.includes(user._id); // Mark if the user is already a follower
         });
 
         renderSearchResults(users, searchResultsContainer);
@@ -122,20 +122,85 @@ function renderSearchResults(users, container) {
         userDiv.classList.add('result-item');
         userDiv.innerHTML = `
             <p><strong>Username:</strong> ${user.username}</p>
-            <button class="follower-btn" data-user-id="${user._id}">
-                ${user.isfollower ? 'Unfollow' : 'Follow'}
-            </button>
+            <div class="tooltip-button">
+                <button class="icon-button follower-btn" data-user-id="${user._id}">
+                    <i class="fa-solid ${user.isFollower ? 'fa-user-minus' : 'fa-user-plus'}"></i>
+                </button>
+                <span class="tooltip-text">${user.isFollower ? 'Unfollow' : 'Follow'}</span>
+            </div>
+            <div class="tooltip-button">
+                <button class="icon-button block-btn" data-user-id="${user._id}">
+                    <i class="fa-solid ${user.isBlocked ? 'fa-unlock' : 'fa-ban'}"></i> <!-- Dynamically set the icon -->
+                </button>
+                <span class="tooltip-text">${user.isBlocked ? 'Unblock' : 'Block'}</span>
+            </div>
         `;
 
         const followerButton = userDiv.querySelector('.follower-btn');
+        const blockButton = userDiv.querySelector('.block-btn');
+
         followerButton.addEventListener('click', () => handleFollowerClick(user._id, followerButton));
+        blockButton.addEventListener('click', () => handleBlockClick(user._id, blockButton, user.isBlocked));  // Pass the block state
+
         container.appendChild(userDiv);
     });
 }
 
 async function handleFollowerClick(targetUserId, button) {
-    // Change the text logic to match what's in your UI
-    const action = button.textContent.trim() === 'Follow' ? 'add-follower' : 'remove-follower';
+    const isUnfollow = button.querySelector('i').classList.contains('fa-user-minus');
+    const action = isUnfollow ? 'remove-follower' : 'add-follower';
+    const url = `/${action}`;
+
+    try {
+        // Make API request
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId }),
+        });
+
+        const result = await response.json();
+
+        // Handle errors from the backend
+        if (!response.ok) {
+            console.error('Error:', result.message);
+            showConfirmationMessage(button, result.message, "red");
+            return;
+        }
+
+        // Success: Update button state based on action
+        updateButtonState(button, isUnfollow);
+        showConfirmationMessage(button, result.message, "green");
+    } catch (err) {
+        console.error('Error handling follow action:', err);
+        showConfirmationMessage(button, "An error occurred. Please try again.", "red");
+    }
+}
+
+function updateButtonState(button, isFollow) {
+    const icon = button.querySelector('i');
+    const tooltipText = button.closest('.tooltip-button').querySelector('.tooltip-text');
+
+    if (!tooltipText) {
+        console.error('Tooltip text element not found!');
+        return;
+    }
+
+    if (isFollow) {
+        // Switch to "Follow" button
+        icon.classList.remove('fa-user-minus');
+        icon.classList.add('fa-user-plus');
+        tooltipText.textContent = 'Follow';
+    } else {
+        // Switch to "Unfollow" button
+        icon.classList.remove('fa-user-plus');
+        icon.classList.add('fa-user-minus');
+        tooltipText.textContent = 'Unfollow';
+    }
+}
+
+async function handleBlockClick(targetUserId, button, isBlocked) {
+    const action = isBlocked ? 'unblock-user' : 'block-user';  // Determine the action based on the block state
     const url = `/${action}`;
 
     try {
@@ -145,47 +210,96 @@ async function handleFollowerClick(targetUserId, button) {
             body: JSON.stringify({ targetUserId })
         });
 
+        const result = await response.json();
+
+        // If response is not ok, show an error
         if (!response.ok) {
-            const error = await response.json();
-            console.error(error.message);
-            showConfirmationMessage(button, error.message, "red");
+            console.error(result.message);
+            showConfirmationMessage(button, result.message, "red");
             return;
         }
 
-        const result = await response.json();
-        showConfirmationMessage(button, result.message, "green");  // Use the result message from the API
-        // Toggle button text based on action
-        button.textContent = action === 'add-follower' ? 'Unfollow' : 'Follow';
+        // Success: Update the button state, show success message, and reset button state
+        showConfirmationMessage(button, result.message, "green");
+
+        // Toggle button state after successful block/unblock action
+        updateBlockButtonState(button, !isBlocked); // Toggle state
+
     } catch (err) {
-        console.error('Error handling follow action:', err);
+        console.error('Error handling block action:', err);
         showConfirmationMessage(button, "An error occurred. Please try again.", "red");
     }
 }
 
+function updateBlockButtonState(button, isBlocked) {
+    const icon = button.querySelector('i');
+    const tooltipText = button.closest('.tooltip-button').querySelector('.tooltip-text');
+
+    if (!tooltipText) {
+        console.error('Tooltip text element not found!');
+        return;
+    }
+
+    if (isBlocked) {
+        // Switch to "Unblock" button
+        icon.classList.remove('fa-ban');
+        icon.classList.add('fa-unlock');
+        tooltipText.textContent = 'Unblock';
+    } else {
+        // Switch to "Block" button
+        icon.classList.remove('fa-unlock');
+        icon.classList.add('fa-ban');
+        tooltipText.textContent = 'Block';
+    }
+}
+
 function showConfirmationMessage(button, message, color) {
-    // Remove any existing message
     const existingMessage = button.nextElementSibling;
     if (existingMessage) existingMessage.remove();
 
-    // Add a new confirmation message
     const messageElement = document.createElement('span');
     messageElement.textContent = message;
     messageElement.style.color = color;
     messageElement.style.fontSize = "0.9em";
     messageElement.style.marginLeft = "10px";
     button.parentElement.appendChild(messageElement);
+
+    // Automatically remove the message after 2 seconds
+    setTimeout(() => messageElement.remove(), 2000);
 }
+
+async function loadFollowersToSidebar() {
+    const followersList = document.getElementById('followers-list');
+    followersList.innerHTML = ''; // Clear content
+
+    try {
+        const response = await fetch('/list-followers');
+        if (!response.ok) throw new Error('Failed to fetch followers.');
+
+        const { followers } = await response.json();
+        if (followers.length === 0) {
+            followersList.innerHTML = '<li>No followers yet.</li>';
+            return;
+        }
+
+        followers.forEach(follower => {
+            const listItem = document.createElement('li');
+            listItem.textContent = follower.username;
+            followersList.appendChild(listItem);
+        });
+    } catch (err) {
+        console.error('Error loading followers:', err);
+        followersList.innerHTML = '<li>Error loading followers.</li>';
+    }
+}
+
+// Call the function on page load
+document.addEventListener('DOMContentLoaded', loadFollowersToSidebar);
 
 function joinTable(tableName) {
     // Placeholder function to handle joining tables
     alert("Joining " + tableName + " table");
     // Redirect to chatroom page or open the chatroom (not yet implemented)
-}
-
-function switchPage(page) {
-    // Placeholder function to switch to different pages
-    alert("Switching to " + page + " page");
-    // Implement actual page switch logic here (navigate to respective page)
 }
 
 // Toggle the dropdown menu visibility

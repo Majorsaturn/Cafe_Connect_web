@@ -1,22 +1,41 @@
-
-/* Login Page */
-body {
+html, body {
     font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    position: relative;
+}
+
+body {
+    background-color: #724E2C;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    height: 100vh;
-    width: 100%;
-    margin: 0;
-    background-color: #F7F7F7;
-    overflow-y: auto;
 }
+
+body::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('CoffeeBeansBackground.png');
+    background-size: auto;
+    background-position: center;
+    opacity: 0.3;
+    z-index: -1;
+}
+
 h1 {
     font-family: "Josefin Slab", sans-serif;
     text-align: center;
     margin-bottom: 30px;
 }
 
+/* Login Page */
 .login-form {
     width: 300px;
     padding: 32px;
@@ -48,7 +67,7 @@ button {
     cursor: pointer;
 }
 button:hover {
-    background-color: #4B2909;
+    background-color: #724E2C;
 }
 .message {
     margin-top: 16px;
@@ -97,46 +116,43 @@ input[type="text"], input[type="email"], input[type="password"] {
     z-index: 1000;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 0 10px 0;
+    align-self: center;
+    justify-content: center;
+    padding: 15px 0 15px 0;
     background-color: #FACE8B;
 }
 
+/* Top Navigation */
+.top-nav .nav-content {
+    display: flex;
+    justify-content: space-between; /* Ensure space between elements */
+    align-items: center; /* Align everything in the nav-content vertically */
+    width: 50%; /* Centered content width */
+}
+
+/* Button with Logo and Text */
 button.logo {
+    display: flex; /* Make the button a flex container */
+    align-items: center; /* Vertically center the image and text */
     font-family: "Josefin Slab", serif;
     font-size: 28px;
     font-weight: bold;
     text-align: left;
     width: auto;
-    margin-left: 10px;
     background: none;
     border: none;
-    color: #4B2909;
+    color: #724E2C;
     padding: 0;
     cursor: pointer;
     transition: color 0.3s;
 }
 
-.nav-links {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    padding-right: 10px;
-}
-
-.nav-links button {
-    font-family: "Josefin Slab", serif;
-    background: none;
-    border: none;
-    color: #4B2909;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.nav-links button:hover {
-    color: #9C6F44;
+/* Coffee Mug Logo Inside Button */
+button.logo .coffee-mug {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+    margin-top: -4px;
 }
 
 /* Profile Dropdown */
@@ -145,6 +161,7 @@ button.logo {
     display: flex;
     align-items: center;
     cursor: pointer;
+    margin-right: 20px;
 }
 
 .profile-img {
@@ -156,7 +173,7 @@ button.logo {
 .dropdown-arrow {
     margin-left: 5px;
     font-size: 14px;
-    color: #4B2909;
+    color: #724E2C;
 }
 
 .dropdown-content {
@@ -180,7 +197,7 @@ button.logo {
 }
 
 .dropdown-content a:hover {
-    background-color: #4B2909;
+    background-color: #724E2C;
 }
 
 /* Layout */
@@ -188,13 +205,19 @@ button.logo {
     display: flex;
     margin-top: 60px;
     height: 100vh;
+    width: 50%;
+    justify-items: center;
+    align-self: center;
 }
 
 .sidebar {
     flex: 0 0 220px;
+    margin-top: 20px;
     padding: 20px;
     background-color: #9C6F44;
     color: #ffffff;
+    border-radius: 8px;
+    height: 86vh;
 }
 
 .sidebar h3 {
@@ -207,24 +230,84 @@ button.logo {
     width: 100%;
     margin: 5px 0;
     padding: 10px;
-    background-color: #4B2909;
+    background-color: #724E2C;
     color: #ffffff;
-    border: none;
+    border: 2px solid transparent;
     cursor: pointer;
     text-align: left;
     font-size: 14px;
 }
 
-#user-search-btn {
+#user-search-btn, #view-followers-btn {
     text-align: center;
+    border: 2px solid transparent;
+}
+.sidebar button:hover, #user-search-btn:hover, #view-followers-btn:hover {
+    border-color: #000000;
 }
 
-#view-friend-requests-btn {
-    text-align: center;
+/* Reset button styles */
+.icon-button {
+    background-color: #9C6F44;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
 }
 
-.sidebar button:hover {
-    /*background-color: #4B2909;*/
+/* Style the icons */
+.icon-button i {
+    font-size: 1em;
+    color: white;
+}
+
+/* Tooltip wrapper */
+.tooltip-button {
+    position: relative;
+    display: inline-block;
+    margin-left: 10px; /* Space between buttons */
+}
+
+/* Tooltip text */
+.tooltip-text {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 0.8em;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Tooltip arrow */
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* Position below the tooltip */
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+/* Show tooltip on hover */
+.tooltip-button:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }
 
 /* Content Area */
@@ -292,7 +375,7 @@ button.logo {
 }
 
 .audio-controls button:hover {
-    color: #4B2909;
+    color: #724E2C;
 }
 
 #current-time {
@@ -339,15 +422,16 @@ button.logo {
     background-color: #9C6F44;
     color: #ffffff;
     padding: 12px 20px;
-    border: none;
+    border: 2px solid transparent;
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
     text-transform: uppercase;
+    transition: border-color 0.3s, border-width 0.3s;
 }
 
 .action-buttons button:hover {
-    background-color: #4B2909;
+    border-color: #000000;
 }
 
 #editTableForm {
@@ -402,9 +486,25 @@ button.logo {
     text-align: center;
 }
 
+.popup-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.popup-content li {
+    margin: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-content button {
+    margin: 0.5rem 0;
+}
+
 .popup-content h3 {
     margin-bottom: 10px;
-    color: #4B2909;
+    color: #724E2C;
 }
 
 .search-bar {
@@ -433,7 +533,7 @@ button.logo {
 }
 
 .search-bar button:hover {
-    background-color: #4B2909;
+    background-color: #724E2C;
 }
 
 .hidden {
@@ -450,7 +550,7 @@ button.logo {
 .results-container h4 {
     margin-bottom: 10px;
     font-size: 16px;
-    color: #4B2909;
+    color: #724E2C;
     text-align: left;
 }
 
@@ -474,5 +574,26 @@ button.logo {
 
 .result-item strong {
     font-weight: bold;
-    color: #4B2909;
+    color: #724E2C;
+}
+
+.follower-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.unfollow-btn {
+    padding: 5px 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.unfollow-btn:hover {
+    background-color: #d32f2f;
 }

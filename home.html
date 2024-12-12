@@ -8,114 +8,137 @@
     <script src="https://kit.fontawesome.com/33097ec53d.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<!-- Top Navigation Bar -->
-<nav class="top-nav">
-    <button class="logo" onclick="goToHome()">CAFÉ CONNECT</button>
-    <div class="nav-links">
-        <!-- Profile dropdown container -->
-        <div class="profile-dropdown" id=":profileDropdown" onClick="toggleDropdown(event)">
-            <img src="default_pfp.png" alt="Profile Picture" class="profile-img" />
-            <span class="dropdown-arrow">▼</span>
-            <div class="dropdown-content">
-                <a href="profile.html">Profile</a>
-                <a onclick="goToSettings()">Settings</a>
-                <a href="#" onclick="logout()">Logout</a>
-            </div>
-        </div>
-    </div>
-</nav>
-
-<!-- Main Container -->
-<div class="main-container">
-    <!-- Sidebar for additional navigation -->
-    <aside class="sidebar">
-        <button id="user-search-btn" onclick="openUserSearchPopup()">Search for a User</button>
-        <button id="view-followers-btn" onclick="openFollowersPopup()">View Followers</button>
-        <h3>Featured Tables</h3>
-        <button onclick="joinTable('chilling')">Chilling/Studying</button>
-        <button onclick="joinTable('brainstorming')">Game Brainstorming</button>
-        <button onclick="joinTable('bored')">Join if Bored</button>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="content">
-        <!-- Ad Space -->
-        <div class="ad-space">
-            <div class="ad">Ad Space</div>
-            <div class="ad">Ad Space</div>
-        </div>
-
-        <!-- Audio Controls -->
-        <div class="audio-controls">
-            <p id="audio-title">Café Calm</p>
-            <div class="media-buttons">
-                <button id="prev"><i class="fas fa-backward"></i></button>
-                <button id="play-pause"><i class="fas fa-play"></i></button>
-                <button id="next"><i class="fas fa-forward"></i></button>
-            </div>
-            <span id="current-time">0:00</span>
-        </div>
-
-        <!-- Audio Player -->
-        <audio id="audio-player" preload="auto">
-            <source src="audios/CafeCalm.wav" type="audio/mpeg">
-        </audio>
-
-
-        <!-- Table Buttons -->
-        <div class="action-buttons">
-            <button onclick="goToSearchTable()">Search for a Table</button>
-            <button onclick="goToCreateTable()">Create a Table</button>
-        </div>
-
-        <!-- Featured Tables Grid -->
-        <section class="tables-grid">
-            <div class="table" id="public-table">
-                <p class="table-name">Chilling/Studying</p>
-                <p class="table-type">Public</p>
-                <button onclick="joinTable('chilling')">Join</button>
-            </div>
-            <div class="table" id="private-table">
-                <p class="table-name">Game Brainstorming</p>
-                <p class="table-type">Private</p>
-                <button onclick="joinTable('brainstorming')">Join</button>
-            </div>
-            <div class="table" id="public-table2">
-                <p class="table-name">Join if Bored</p>
-                <p class="table-type">Public</p>
-                <button onclick="joinTable('bored')">Join</button>
-            </div>
-        </section>
-
-        <!-- User Search Popup -->
-        <div id="user-search-popup" class="popup hidden">
-            <div class="popup-content">
-                <h3>Search for a User</h3>
-                <div class="search-bar">
-                    <input type="text" id="username-input" placeholder="Enter name, username, or email" />
-                    <button id="search-button" onclick="searchForUser()">Search</button>
-                </div>
-                <div id="search-results" class="results-container">
-                    <!-- Results will be dynamically added here -->
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-content">
+            <!-- Button with Logo and Text -->
+            <button class="logo" onclick="goToHome()">
+                <img src="CoffeeMug.png" alt="Coffee Mug" class="coffee-mug">
+                CAFÉ CONNECT
+            </button>
+            <!-- Profile dropdown container -->
+            <div class="profile-dropdown" id=":profileDropdown" onClick="toggleDropdown(event)">
+                <img src="default_pfp.png" alt="Profile Picture" class="profile-img" />
+                <span class="dropdown-arrow">▼</span>
+                <div class="dropdown-content">
+                    <a onclick="goToSettings()">Settings</a>
+                    <a href="#" onclick="logout()">Logout</a>
                 </div>
             </div>
         </div>
+    </nav>
 
-        <!-- List Followers Popup -->
-        <div id="followers-popup" class="popup hidden">
-            <div class="popup-content">
-                <h3>Followers</h3>
-                <div id="followers-container">
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar for additional navigation -->
+        <aside class="sidebar">
+            <button id="user-search-btn" onclick="openUserSearchPopup()">Search for a User</button>
+            <h3>Featured Tables</h3>
+            <button onclick="joinTable('chilling')">Chilling/Studying</button>
+            <button onclick="joinTable('brainstorming')">Game Brainstorming</button>
+            <button onclick="joinTable('bored')">Join if Bored</button>
+            <div id="followers-sidebar">
+                <h3>Following</h3>
+                <ul id="followers-list">
                     <!-- Followers will be dynamically populated here -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content">
+            <!-- Ad Space -->
+            <div class="ad-space">
+                <div class="ad">Ad Space</div>
+                <div class="ad">Ad Space</div>
+            </div>
+
+            <!-- Audio Controls -->
+            <div class="audio-controls">
+                <p id="audio-title">Café Calm</p>
+                <div class="media-buttons">
+                    <button id="prev"><i class="fas fa-backward"></i></button>
+                    <button id="play-pause"><i class="fas fa-play"></i></button>
+                    <button id="next"><i class="fas fa-forward"></i></button>
+                </div>
+                <span id="current-time">0:00</span>
+            </div>
+
+            <!-- Audio Player -->
+            <audio id="audio-player" preload="auto">
+                <source src="audios/CafeCalm.wav" type="audio/mpeg">
+            </audio>
+
+
+            <!-- Table Buttons -->
+            <div class="action-buttons">
+                <button onclick="goToSearchTable()">Search for a Table</button>
+                <button onclick="goToCreateTable()">Create a Table</button>
+            </div>
+
+            <!-- Featured Tables Grid -->
+            <section class="tables-grid">
+                <div class="table" id="public-table">
+                    <p class="table-name">Chilling/Studying</p>
+                    <p class="table-type">Public</p>
+                    <button onclick="joinTable('Chilling/Studying')">Join</button>
+                </div>
+                <div class="table" id="private-table">
+                    <p class="table-name">Game Brainstorming</p>
+                    <p class="table-type">Private</p>
+                    <button onclick="joinTable('Game Brainstorming')">Join</button>
+                </div>
+                <div class="table" id="public-table2">
+                    <p class="table-name">Join if Bored</p>
+                    <p class="table-type">Public</p>
+                    <button onclick="joinTable('Join if Bored')">Join</button>
+                </div>
+                <div class="table" id="private-table2">
+                    <p class="table-name">Listening Session</p>
+                    <p class="table-type">Private</p>
+                    <button onclick="joinTable('Listening Session')">Join</button>
+                </div>
+                <div class="table" id="private-table3">
+                    <p class="table-name">Joe's Hangout</p>
+                    <p class="table-type">Private</p>
+                    <button onclick="joinTable('Joe`s Hangout')">Join</button>
+                </div>
+                <div class="table" id="public-table3">
+                    <p class="table-name">Take a Break</p>
+                    <p class="table-type">Public</p>
+                    <button onclick="joinTable('Take a Break')">Join</button>
+                </div>
+            </section>
+
+            <!-- User Search Popup -->
+            <div id="user-search-popup" class="popup hidden">
+                <div class="popup-content">
+                    <h3>Search for a User</h3>
+                    <div class="search-bar">
+                        <input type="text" id="username-input" placeholder="Enter name, username, or email" />
+                        <button id="search-button" onclick="searchForUser()">Search</button>
+                    </div>
+                    <div id="search-results" class="results-container">
+                        <!-- Results will be dynamically added here -->
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <!-- List Followers Popup -->
+            <div id="followers-popup" class="popup hidden">
+                <div class="popup-content">
+                    <h3>Followers</h3>
+                    <div id="followers-container">
+                        <!-- Followers will be dynamically populated here -->
+                    </div>
+                </div>
+            </div>
 
 
 
-    </main>
-</div>
+        </main>
+    </div>
 
-<script src="home.js"></script>
+    <script src="home.js"></script>
 </body>
 </html>

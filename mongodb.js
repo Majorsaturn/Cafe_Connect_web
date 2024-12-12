@@ -231,94 +231,99 @@ async function listFollowers(userId) {
     const Followers = client.db("CC_1st").collection("Followers");
     const Users = client.db("CC_1st").collection("Users");
 
-    // Find all followers for the given userId
-    const followers = await Followers.find({ userId: userId }).toArray();
+    // Ensure `userId` is an ObjectId for consistency
+    const userObjectId = new ObjectId(userId);
 
-    // Extract follower IDs and retrieve user details
-    const followerIds = followers.map(f => f.followerId);
-    return Users.find({ _id: { $in: followerIds.map(id => ObjectId(id)) } }).toArray();
+    // Find all follower documents for the given userId
+    const followers = await Followers.find({ userId: userObjectId }).toArray();
+
+    // Extract `followerId` values and convert to ObjectId
+    const followerIds = followers.map(f => new ObjectId(f.followerId));
+
+    // Query the Users collection for these follower IDs
+    const followerDetails = await Users.find({ _id: { $in: followerIds } }).toArray();
+
+    return followerDetails;
 }
 
-async function blockUser(token, blockUser) {
-    try {
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
+async function blockUser(currentUserId, targetUserId) {
+    const BlockedUsers = client.db("CC_1st").collection("BlockedUsers");
 
-        const collection = client.db("CC_1st").collection("Users");
+    const currentUserIdObj = new ObjectId(currentUserId);
+    const targetUserIdObj = new ObjectId(targetUserId);
 
-        // Check if the user to be blocked exists
-        const userToBlock = await collection.findOne({ username: blockUser });
-        if (!userToBlock) {
-            console.log(`User ${blockUser} not found.`);
-            return { success: false, message: `User ${blockUser} does not exist.` };
-        }
+    // Check if the block relationship already exists
+    const existingBlock = await BlockedUsers.findOne({
+        blockerId: currentUserIdObj,
+        blockedId: targetUserIdObj
+    });
 
-        // Add the user to the blocked list of the requester, ensuring no duplicates
-        const result = await collection.updateOne(
-            { _id: userId },
-            { $addToSet: { blocked: blockUser } }
-        );
-
-        if (result.modifiedCount > 0) {
-            console.log(`User ${blockUser} blocked successfully!`);
-            return { success: true, message: `User ${blockUser} blocked successfully!` };
-        } else {
-            console.log(`Failed to block user ${blockUser}.`);
-            return { success: false, message: `Failed to block user ${blockUser}.` };
-        }
-    } catch (error) {
-        console.error("Error blocking user:", error);
-        return { success: false, error: "Failed to authenticate or block user." };
+    if (existingBlock) {
+        return { message: "User is already blocked." }; // Return success if already blocked
     }
+
+    // Insert a new block document
+    await BlockedUsers.insertOne({
+        blockerId: currentUserIdObj,
+        blockedId: targetUserIdObj,
+        timestamp: new Date()
+    });
+
+    return { message: "User blocked successfully." };
 }
 
-async function unblockUser(token, blockedUser) {
-    try {
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
+async function unblockUser(currentUserId, targetUserId) {
+    const BlockedUsers = client.db("CC_1st").collection("BlockedUsers");
 
-        const collection = client.db("CC_1st").collection("Users");
+    const currentUserIdObj = new ObjectId(currentUserId);
+    const targetUserIdObj = new ObjectId(targetUserId);
 
-        // Remove the user from the blocked list using $pull
-        const result = await collection.updateOne(
-            { _id: userId },
-            { $pull: { blocked: blockedUser } }
-        );
+    // Remove the block document
+    const result = await BlockedUsers.deleteOne({
+        blockerId: currentUserIdObj,
+        blockedId: targetUserIdObj
+    });
 
-        if (result.modifiedCount > 0) {
-            console.log(`User ${blockedUser} has been unblocked successfully.`);
-            return { success: true, message: `User ${blockedUser} has been unblocked successfully.` };
-        } else {
-            return { success: false, message: `User ${blockedUser} is not in the blocked list.` };
-        }
-    } catch (error) {
-        console.error("Error unblocking user:", error);
-        return { success: false, error: "Failed to authenticate or unblock user." };
+    if (result.deletedCount === 0) {
+        throw new Error("Block relationship does not exist.");
     }
+
+    return { message: "User unblocked successfully." };
 }
 
-async function listBlockedUsers(token) {
+async function listBlockedUsers(userId) {
     try {
-        const decodedToken = jwt.verify(token, secret);
-        const userId = new ObjectId(decodedToken.userId);
+        const currentUserIdObj = new ObjectId(userId);
 
-        const collection = client.db("CC_1st").collection("Users");
+        const BlockedUsers = client.db("CC_1st").collection("BlockedUsers");
 
-        // Retrieve the user's blocked list
-        const user = await collection.findOne(
-            { _id: userId },
-            { projection: { blocked: 1 } } // Only fetch the "blocked" field
-        );
+        // Find all users that are blocked by the current user
+        const blockedUsers = await BlockedUsers.find({ blockerId: currentUserIdObj }).toArray();
 
-        if (!user || !user.blocked) {
-            return { success: false, message: "No blocked users found or user does not exist." };
+        if (!blockedUsers || blockedUsers.length === 0) {
+            return { success: false, message: "No blocked users found." };
         }
 
-        console.log("Blocked users retrieved successfully:", user.blocked);
-        return { success: true, blockedUsers: user.blocked };
+        // Extract the blocked user IDs from the relationships
+        const blockedUserIds = blockedUsers.map(block => block.blockedId);
+
+        // Fetch the user details for each blocked user (assuming 'Users' collection holds user info)
+        const usersCollection = client.db("CC_1st").collection("Users");
+        const blockedUserDetails = await usersCollection.find({
+            _id: { $in: blockedUserIds }
+        }).toArray();
+
+        // Return an array of blocked users with their details (e.g., username, id)
+        const result = blockedUserDetails.map(user => ({
+            id: user._id.toString(),
+            username: user.username // Assuming you have a 'username' field in the Users collection
+        }));
+
+        console.log("Blocked users retrieved successfully:", result);
+        return { success: true, blockedUsers: result };
     } catch (error) {
         console.error("Error retrieving blocked users:", error);
-        return { success: false, error: "Failed to authenticate or retrieve blocked users." };
+        return { success: false, error: "Failed to retrieve blocked users." };
     }
 }
 
